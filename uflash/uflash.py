@@ -20,6 +20,7 @@ import struct
 import sys
 from subprocess import check_output
 import time
+from importlib.resources import files as importlib_files
 
 
 #: The help text to be shown by uflash  when requested.
@@ -524,7 +525,7 @@ def flash(
     if path_to_runtime:
         runtime = path_to_runtime
     else:
-        runtime = os.path.join(os.path.dirname(__file__), "firmware.hex")
+        runtime = str(importlib_files("uflash") / "firmware.hex")
     with open(runtime) as runtime_file:
         runtime = runtime_file.read()
     # Generate the resulting hex file.

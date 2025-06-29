@@ -1,3 +1,4 @@
+include uflash/firmware.hex
 include CHANGES.rst
 include README.rst
 include LICENSE

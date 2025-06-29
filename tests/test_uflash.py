@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import threading
+from importlib.resources import files as importlib_files
 
 import pytest
 import uflash
@@ -356,7 +357,10 @@ def test_save_hex():
         os.remove(path_to_hex)
     assert not os.path.exists(path_to_hex)
     # Create the hex file we want to "flash"
-    hex_file = uflash.embed_fs_uhex(uflash._RUNTIME, TEST_SCRIPT)
+    runtime = str(importlib_files("uflash") / "firmware.hex")
+    with open(runtime) as runtime_file:
+        runtime = runtime_file.read()
+    hex_file = uflash.embed_fs_uhex(runtime, TEST_SCRIPT)
     # Save the hex.
     uflash.save_hex(hex_file, path_to_hex)
     # Ensure the hex has been written as expected.
@@ -395,7 +399,10 @@ def test_flash_no_args():
         with mock.patch("uflash.save_hex") as mock_save:
             uflash.flash()
             assert mock_save.call_count == 1
-            assert mock_save.call_args[0][0] == uflash._RUNTIME
+            runtime = str(importlib_files("uflash") / "firmware.hex")
+            with open(runtime) as runtime_file:
+                runtime = runtime_file.read()
+            assert mock_save.call_args[0][0] == runtime
             expected_path = os.path.join("foo", "micropython.hex")
             assert mock_save.call_args[0][1] == expected_path
 
@@ -415,7 +422,10 @@ def test_flash_has_python_no_path_to_microbit():
             with open("tests/example.py", "rb") as py_file:
                 py_code = py_file.read()
             assert py_code
-            expected_hex = uflash.embed_fs_uhex(uflash._RUNTIME, py_code)
+            runtime = str(importlib_files("uflash") / "firmware.hex")
+            with open(runtime) as runtime_file:
+                runtime = runtime_file.read()
+            expected_hex = uflash.embed_fs_uhex(runtime, py_code)
             assert mock_save.call_args[0][0] == expected_hex
             expected_path = os.path.join("foo", "micropython.hex")
             assert mock_save.call_args[0][1] == expected_path
@@ -433,7 +443,10 @@ def test_flash_with_path_to_multiple_microbits():
         with open("tests/example.py", "rb") as py_file:
             py_code = py_file.read()
         assert py_code
-        expected_hex = uflash.embed_fs_uhex(uflash._RUNTIME, py_code)
+        runtime = str(importlib_files("uflash") / "firmware.hex")
+        with open(runtime) as runtime_file:
+            runtime = runtime_file.read()
+        expected_hex = uflash.embed_fs_uhex(runtime, py_code)
 
         assert mock_save.call_args_list[0][0][0] == expected_hex
         expected_path = os.path.join("test_path1", "micropython.hex")
@@ -456,7 +469,10 @@ def test_flash_with_path_to_microbit():
         with open("tests/example.py", "rb") as py_file:
             py_code = py_file.read()
         assert py_code
-        expected_hex = uflash.embed_fs_uhex(uflash._RUNTIME, py_code)
+        runtime = str(importlib_files("uflash") / "firmware.hex")
+        with open(runtime) as runtime_file:
+            runtime = runtime_file.read()
+        expected_hex = uflash.embed_fs_uhex(runtime, py_code)
         assert mock_save.call_args[0][0] == expected_hex
         expected_path = os.path.join("test_path", "micropython.hex")
         assert mock_save.call_args[0][1] == expected_path
@@ -475,7 +491,10 @@ def test_flash_with_keepname():
         with open("tests/example.py", "rb") as py_file:
             py_code = py_file.read()
         assert py_code
-        expected_hex = uflash.embed_fs_uhex(uflash._RUNTIME, py_code)
+        runtime = str(importlib_files("uflash") / "firmware.hex")
+        with open(runtime) as runtime_file:
+            runtime = runtime_file.read()
+        expected_hex = uflash.embed_fs_uhex(runtime, py_code)
         assert mock_save.call_args[0][0] == expected_hex
         expected_path = os.path.join("test_path", "example.hex")
         assert mock_save.call_args[0][1] == expected_path
@@ -505,8 +524,11 @@ def test_flash_with_python_script():
         with mock.patch("uflash.find_microbit", return_value="bar"):
             with mock.patch("uflash.embed_fs_uhex") as mock_embed_fs_uhex:
                 uflash.flash(python_script=python_script)
+                runtime = str(importlib_files("uflash") / "firmware.hex")
+                with open(runtime) as runtime_file:
+                    runtime = runtime_file.read()
                 mock_embed_fs_uhex.assert_called_once_with(
-                    uflash._RUNTIME, python_script
+                    runtime, python_script
                 )
 
 
@@ -659,22 +681,6 @@ def test_watch_raises(capsys):
     expected = "Error watching test.py"
     assert expected in stderr
 
-
-def test_minify_arg(capsys):
-    """
-    Test a the minify flag print an error but doesn't raise an exception.
-    """
-    with mock.patch("uflash.flash") as mock_flash:
-        uflash.main(argv=["tests/example.py", "-m"])
-        _, stderr = capsys.readouterr()
-        assert "The 'minify' flag is no longer supported, ignoring" in stderr
-        mock_flash.assert_called_once_with(
-            path_to_python="tests/example.py",
-            paths_to_microbits=[],
-            keepname=False,
-        )
-
-
 def test_main_two_args():
     """
     If there are two arguments passed into main, then it should pass them onto
@@ -787,23 +793,7 @@ def test_py2hex_runtime_arg():
         mock_flash.assert_called_once_with(path_to_python='tests/example.py',
                                            paths_to_microbits=['tests'],
                                            path_to_runtime='tests/fake.hex',
-                                           minify=False,
                                            keepname=True)
-
-
-def test_py2hex_minify_arg(capsys):
-    """
-    Test a simple call to main().
-    """
-    with mock.patch("uflash.flash") as mock_flash:
-        uflash.py2hex(argv=["tests/example.py", "-m"])
-        _, stderr = capsys.readouterr()
-        assert "The 'minify' flag is no longer supported, ignoring" in stderr
-        mock_flash.assert_called_once_with(
-            path_to_python="tests/example.py",
-            paths_to_microbits=["tests"],
-            keepname=True,
-        )
 
 
 def test_py2hex_outdir_arg():
@@ -817,17 +807,6 @@ def test_py2hex_outdir_arg():
             paths_to_microbits=["/tmp"],
             keepname=True,
         )
-
-
-def test_py2hex_runtime_not_implemented(capsys):
-    """
-    Raises a NotImplementedError when trying to use the runtime flag with the
-    py2hex command.
-    """
-    with pytest.raises(NotImplementedError):
-        uflash.py2hex(argv=["--runtime", "test.hex"])
-        _, stderr = capsys.readouterr()
-        assert "The 'runtime' flag is no longer supported." in stderr
 
 
 def test_bytes_to_ihex():

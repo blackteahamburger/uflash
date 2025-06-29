@@ -1,0 +1,2 @@
+from .uflash import *
+from .uflash import _VERSION, _SCRIPT_ADDR, _MICROBIT_ID_V1, _FS_START_ADDR_V1, _FS_END_ADDR_V1, _MICROBIT_ID_V2, _FS_START_ADDR_V2, _FS_END_ADDR_V2, _MAX_SIZE

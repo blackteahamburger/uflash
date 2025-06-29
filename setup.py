@@ -17,7 +17,8 @@ setup(
     author="Nicholas H.Tollervey",
     author_email="ntoll@ntoll.org",
     url="https://github.com/ntoll/uflash",
-    py_modules=["uflash", "py2hex"],
+    packages=["uflash"],
+    include_package_data=True,
     license="MIT",
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -27,10 +28,6 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: POSIX",
         "Operating System :: Microsoft :: Windows",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
@@ -39,8 +36,8 @@ setup(
         "Topic :: Education",
         "Topic :: Software Development :: Embedded Systems",
     ],
-    python_requires=">=3.5",
+    python_requires=">=3.9",
     entry_points={
-        "console_scripts": ["uflash=uflash:main", "py2hex=uflash:py2hex"],
+        "console_scripts": ["uflash=uflash.uflash:main", "py2hex=uflash.uflash:py2hex"],
     },
 )
