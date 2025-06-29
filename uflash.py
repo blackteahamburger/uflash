@@ -28,8 +28,7 @@ Flash Python onto the BBC micro:bit or extract Python from a .hex file.
 
 If no path to the micro:bit is provided uflash will attempt to autodetect the
 correct path to the device. If no path to the Python script is provided uflash
-will flash the unmodified MicroPython firmware onto the device. Use the -e flag
-to recover a Python script from a hex file. Use the -r flag to specify a custom
+will flash the unmodified MicroPython firmware onto the device. Use the -r flag to specify a custom
 version of the MicroPython runtime.
 
 Documentation is here: https://uflash.readthedocs.io/en/latest/
