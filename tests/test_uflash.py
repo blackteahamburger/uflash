@@ -660,26 +660,6 @@ def test_watch_raises(capsys):
     assert expected in stderr
 
 
-def test_runtime_not_implemented(capsys):
-    """
-    Raises a NotImplementedError when trying to use the runtime flag.
-    """
-    with pytest.raises(NotImplementedError):
-        uflash.main(argv=["--runtime", "test.hex"])
-        _, stderr = capsys.readouterr()
-        assert "The 'runtime' flag is no longer supported." in stderr
-
-
-def test_extract_not_implemented(capsys):
-    """
-    Raises a NotImplementedError when trying to use the extract flag.
-    """
-    with pytest.raises(NotImplementedError):
-        uflash.main(argv=["--extract", "test.py"])
-        _, stderr = capsys.readouterr()
-        assert "The 'extract' flag is no longer supported." in stderr
-
-
 def test_minify_arg(capsys):
     """
     Test a the minify flag print an error but doesn't raise an exception.
@@ -796,6 +776,19 @@ def test_py2hex_one_arg():
             paths_to_microbits=["tests"],
             keepname=True,
         )
+
+
+def test_py2hex_runtime_arg():
+    """
+    Test a simple call to main().
+    """
+    with mock.patch('uflash.flash') as mock_flash:
+        uflash.py2hex(argv=['tests/example.py', '-r', 'tests/fake.hex'])
+        mock_flash.assert_called_once_with(path_to_python='tests/example.py',
+                                           paths_to_microbits=['tests'],
+                                           path_to_runtime='tests/fake.hex',
+                                           minify=False,
+                                           keepname=True)
 
 
 def test_py2hex_minify_arg(capsys):

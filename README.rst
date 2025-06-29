@@ -97,8 +97,25 @@ You can even flash multiple devices at once::
     Flashing myscript.py to: /media/ntoll/MICROBIT/micropython.hex
     Flashing myscript.py to: /media/ntoll/MICROBIT1/micropython.hex
 
+This will save the Python script recovered from "something.hex" into the file
+"myscript.py". If you don't supply a target the recovered script will emit to
+stdout.
+
+If you're developing MicroPython and have a custom runtime hex file you can
+specify that uflash use it instead of the built-in version of MicroPython in
+the following way::
+
+    $ uflash -r firmware.hex
+
+or::
+
+    $ uflash --runtime=firmware.hex
+
 py2hex
 ~~~~~~
+
+py2hex includes that same -r/--runtime option as uflash
+and adds an additional option -o/--outdir:
 
 To create output .hex files in the same directory as the input .py files::
 
