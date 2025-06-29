@@ -13,15 +13,7 @@ import threading
 import pytest
 import uflash
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
-else:
-    # mock_open can't read binary data in < 3.4.3
-    # https://bugs.python.org/issue23004
-    if (3, 4) <= sys.version_info < (3, 4, 3):
-        import mock
+from unittest import mock
 
 
 TEST_SCRIPT = b"""from microbit import *
