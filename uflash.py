@@ -52,7 +52,7 @@ _VERSION = (
 MICROPYTHON_V1_VERSION = "1.0.1"
 MICROPYTHON_V2_VERSION = "2.0.0"
 
-#: (Deprecated) The magic start address in flash memory to extract script.
+#: The magic start address in flash memory to extract script.
 _SCRIPT_ADDR = 0x3E000
 
 #: Filesystem boundaries, this might change with different MicroPython builds.
@@ -334,10 +334,6 @@ def bytes_to_ihex(addr, data, universal_data_record=False):
 def unhexlify(blob):
     """
     Takes a hexlified script and turns it back into a string of Python code.
-
-    IMPORTANT!
-    Although this function is no longer used in the uflash cli commands,
-    it is called by extract_script, which is maintained for Mu access.
     """
     lines = blob.split("\n")[1:]
     output = []
@@ -367,9 +363,6 @@ def extract_script(embedded_hex):
     Given a hex file containing the MicroPython runtime and an embedded Python
     script, will extract the original Python script.
     Returns a string containing the original embedded script.
-
-    IMPORTANT!
-    Although this function is no longer used, it is maintained here for Mu.
     """
     hex_lines = embedded_hex.split("\n")
     script_addr_high = hex((_SCRIPT_ADDR >> 16) & 0xFFFF)[2:].upper().zfill(4)
@@ -604,32 +597,12 @@ def py2hex(argv=None):
     parser = argparse.ArgumentParser(description=_PY2HEX_HELP_TEXT)
     parser.add_argument("source", nargs="*", default=None)
     parser.add_argument(
-        "-r",
-        "--runtime",
-        default=None,
-        help="This feature has been deprecated.",
-    )
-    parser.add_argument(
         "-o", "--outdir", default=None, help="Output directory"
-    )
-    parser.add_argument(
-        "-m",
-        "--minify",
-        action="store_true",
-        help="This feature has been deprecated.",
     )
     parser.add_argument(
         "--version", action="version", version="%(prog)s " + get_version()
     )
     args = parser.parse_args(argv)
-
-    if args.runtime:
-        raise NotImplementedError("The 'runtime' flag is no longer supported.")
-    if args.minify:
-        print(
-            "The 'minify' flag is no longer supported, ignoring.",
-            file=sys.stderr,
-        )
 
     for py_file in args.source:
         if not args.outdir:
@@ -661,43 +634,15 @@ def main(argv=None):
     parser.add_argument("source", nargs="?", default=None)
     parser.add_argument("target", nargs="*", default=None)
     parser.add_argument(
-        "-r",
-        "--runtime",
-        default=None,
-        help="This feature has been deprecated.",
-    )
-    parser.add_argument(
-        "-e",
-        "--extract",
-        action="store_true",
-        help="This feature has been deprecated.",
-    )
-    parser.add_argument(
         "-w",
         "--watch",
         action="store_true",
         help="Watch the source file for changes.",
     )
     parser.add_argument(
-        "-m",
-        "--minify",
-        action="store_true",
-        help="This feature has been deprecated.",
-    )
-    parser.add_argument(
         "--version", action="version", version="%(prog)s " + get_version()
     )
     args = parser.parse_args(argv)
-
-    if args.runtime:
-        raise NotImplementedError("The 'runtime' flag is no longer supported.")
-    if args.extract:
-        raise NotImplementedError("The 'extract' flag is no longer supported.")
-    if args.minify:
-        print(
-            "The 'minify' flag is no longer supported, ignoring.",
-            file=sys.stderr,
-        )
 
     if args.watch:
         try:
