@@ -1,3 +1,7 @@
+================================
+This repo is for Gentoo packaging, report related issues here
+================================
+
 uFlash
 ======
 
