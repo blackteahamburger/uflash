@@ -1,5 +1,5 @@
 ================================
-This repo is for Gentoo packaging, report related issues here
+A community fork of uflash. PR welcome!
 ================================
 
 uFlash
@@ -95,6 +95,14 @@ second argument to the command::
     $ uflash myscript.py /media/ntoll/MICROBIT
     Flashing myscript.py to: /media/ntoll/MICROBIT/micropython.hex
 
+To extract a Python script from a hex file use the "-e" flag like this::
+
+    $ uflash -e something.hex myscript.py
+
+This will save the Python script recovered from "something.hex" into the file
+"myscript.py". If you don't supply a target the recovered script will emit to
+stdout.
+
 You can even flash multiple devices at once::
 
     $ uflash myscript.py /media/ntoll/MICROBIT /media/ntoll/MICROBIT1
@@ -157,7 +165,7 @@ The source code is hosted in GitHub. Please feel free to fork the repository.
 Assuming you have Git installed you can download the code from the canonical
 repository with the following command::
 
-    $ git clone https://github.com/ntoll/uflash.git
+    $ git clone https://github.com/blackteahamburger/uflash.git
 
 Ensure you have the correct dependencies for development installed by creating
 a virtualenv and running::

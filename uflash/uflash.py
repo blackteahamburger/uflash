@@ -20,6 +20,7 @@ import struct
 import sys
 from subprocess import check_output
 import time
+import nudatus
 from importlib.resources import files as importlib_files
 
 
@@ -78,6 +79,16 @@ def get_version():
     return ".".join([str(i) for i in _VERSION])
 
 
+def minify(script):
+    """
+    Minify the script.
+    """
+    script = nudatus.mangle(script.decode("utf-8")).encode("utf-8")
+    if len(script) >= _MAX_SIZE:
+        raise ValueError("Python Script is still too long after minification")
+    return script
+
+
 def script_to_fs(script, microbit_version_id):
     """
     Convert a Python script (in bytes format) into Intel Hex records, which
@@ -115,9 +126,7 @@ def script_to_fs(script, microbit_version_id):
     main_py_max_size = ((fs_size / chunk_size) * chunk_data_size) - 9
     if len(script) >= main_py_max_size:
         raise ValueError(
-            "Python script must be less than {} bytes.".format(
-                main_py_max_size
-            )
+            "Python script must be less than {} bytes.".format(main_py_max_size)
         )
 
     # First file chunk opens with:
@@ -126,7 +135,7 @@ def script_to_fs(script, microbit_version_id):
     # 0x07 - Third byte is the filename length (7 letters for main.py)
     # Followed by UFT-8 encoded filename (in this case "main.py")
     # Followed by the UFT-8 encoded file data until end of chunk data
-    header = b"\xFE\xFF\x07\x6D\x61\x69\x6E\x2E\x70\x79"
+    header = b"\xfe\xff\x07\x6d\x61\x69\x6e\x2e\x70\x79"
     first_chunk_data_size = chunk_size - len(header) - 1
     chunks = []
 
@@ -150,18 +159,14 @@ def script_to_fs(script, microbit_version_id):
     if last_chunk_offset == 0:
         chunks[-1][-1] = len(chunks) + 1
         chunks.append(
-            bytearray(
-                struct.pack("B", len(chunks)) + (b"\xff" * (chunk_size - 1))
-            )
+            bytearray(struct.pack("B", len(chunks)) + (b"\xff" * (chunk_size - 1)))
         )
 
     # For Python2 compatibility we need to explicitly convert to bytes
     data = b"".join([bytes(c) for c in chunks])
     fs_ihex = bytes_to_ihex(fs_start_address, data, universal_data_record)
     # Add this byte after the fs flash area to configure the scratch page there
-    scratch_ihex = bytes_to_ihex(
-        fs_end_address, b"\xfd", universal_data_record
-    )
+    scratch_ihex = bytes_to_ihex(fs_end_address, b"\xfd", universal_data_record)
     # Remove scratch Extended Linear Address record if we are in the same range
     ela_record_len = 16
     if fs_ihex[:ela_record_len] == scratch_ihex[:ela_record_len]:
@@ -334,7 +339,7 @@ def unhexlify(blob):
         # Discard the address, length etc. and reverse the hexlification
         output.append(binascii.unhexlify(line[9:-2]))
     # Check the header is correct ("MP<size>")
-    if output[0][0:2].decode("utf-8") != u"MP":
+    if output[0][0:2].decode("utf-8") != "MP":
         return ""
     # Strip off header
     output[0] = output[0][4:]
@@ -367,11 +372,7 @@ def extract_script(embedded_hex):
         if val[0:9] == ":02000004":
             # Reached an extended address record, check if within script range
             within_range = val[9:13].upper() == script_addr_high
-        elif (
-            within_range
-            and val[0:3] == ":10"
-            and val[3:7].upper() == script_addr_low
-        ):
+        elif within_range and val[0:3] == ":10" and val[3:7].upper() == script_addr_low:
             start_script = loc
             break
     if start_script:
@@ -383,9 +384,7 @@ def extract_script(embedded_hex):
                 break
         # Pass the extracted hex through unhexlify
         return unhexlify(
-            "\n".join(
-                hex_lines[start_script - 1 : end_script if end_script else -6]
-            )
+            "\n".join(hex_lines[start_script - 1 : end_script if end_script else -6])
         )
     return ""
 
@@ -447,10 +446,7 @@ def find_microbit():
                 #
                 if ctypes.windll.kernel32.GetDriveTypeW(path) != 2:
                     continue
-                if (
-                    os.path.exists(path)
-                    and get_volume_name(path) == "MICROBIT"
-                ):
+                if os.path.exists(path) and get_volume_name(path) == "MICROBIT":
                     return path
         finally:
             ctypes.windll.kernel32.SetErrorMode(old_mode)
@@ -519,7 +515,7 @@ def flash(
         if not path_to_python.endswith(".py"):
             raise ValueError('Python files must end in ".py".')
         with open(path_to_python, "rb") as python_file:
-            python_script = python_file.read()
+            python_script = minify(python_file.read())
 
     # Load the hex for the runtime.
     if path_to_runtime:
@@ -553,6 +549,20 @@ def flash(
             save_hex(micropython_hex, hex_path)
     else:
         raise IOError("Unable to find micro:bit. Is it plugged in?")
+
+
+def extract(path_to_hex, output_path=None):
+    """
+    Given a path_to_hex file this function will attempt to extract the
+    embedded script from it and save it either to output_path or stdout
+    """
+    with open(path_to_hex, "r") as hex_file:
+        python_script = extract_script(hex_file.read())
+        if output_path:
+            with open(output_path, "w") as output_file:
+                output_file.write(python_script)
+        else:
+            print(python_script)
 
 
 def watch_file(path, func, *args, **kwargs):
@@ -594,11 +604,10 @@ def py2hex(argv=None):
 
     parser = argparse.ArgumentParser(description=_PY2HEX_HELP_TEXT)
     parser.add_argument("source", nargs="*", default=None)
-    parser.add_argument('-r', '--runtime', default=None,
-                        help="Use the referenced MicroPython runtime.")
     parser.add_argument(
-        "-o", "--outdir", default=None, help="Output directory"
+        "-r", "--runtime", default=None, help="Use the referenced MicroPython runtime."
     )
+    parser.add_argument("-o", "--outdir", default=None, help="Output directory")
     parser.add_argument(
         "--version", action="version", version="%(prog)s " + get_version()
     )
@@ -634,8 +643,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=_HELP_TEXT)
     parser.add_argument("source", nargs="?", default=None)
     parser.add_argument("target", nargs="*", default=None)
-    parser.add_argument('-r', '--runtime', default=None,
-                        help="Use the referenced MicroPython runtime.")
+    parser.add_argument(
+        "-r", "--runtime", default=None, help="Use the referenced MicroPython runtime."
+    )
     parser.add_argument(
         "-w",
         "--watch",
@@ -643,11 +653,27 @@ def main(argv=None):
         help="Watch the source file for changes.",
     )
     parser.add_argument(
+        "-e",
+        "--extract",
+        action="store_true",
+        help=(
+            "Extract python source from a hex file instead of creating the hex file."
+        ),
+    )
+    parser.add_argument(
         "--version", action="version", version="%(prog)s " + get_version()
     )
     args = parser.parse_args(argv)
 
-    if args.watch:
+    if args.extract:
+        try:
+            extract(args.source, args.target)
+        except Exception as ex:
+            error_message = "Error extracting {source}: {error!s}"
+            print(error_message.format(source=args.source, error=ex), file=sys.stderr)
+            sys.exit(1)
+
+    elif args.watch:
         try:
             watch_file(
                 args.source,
@@ -677,11 +703,13 @@ def main(argv=None):
             source = args.source
             target = args.target if args.target else "microbit"
             if args.runtime:
-                runtime = "with runtime {runtime}".format(runtime=args.runtime)
+                runtime = " with runtime {runtime}".format(runtime=args.runtime)
             else:
                 runtime = ""
             print(
-                error_message.format(source=source, target=target, runtime=runtime, error=ex),
+                error_message.format(
+                    source=source, target=target, runtime=runtime, error=ex
+                ),
                 file=sys.stderr,
             )
             sys.exit(1)

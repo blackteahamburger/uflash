@@ -37,6 +37,9 @@ setup(
         "Topic :: Software Development :: Embedded Systems",
     ],
     python_requires=">=3.9",
+    install_requires=[
+        "nudatus>=0.0.2",
+    ],
     entry_points={
         "console_scripts": ["uflash=uflash.uflash:main", "py2hex=uflash.uflash:py2hex"],
     },

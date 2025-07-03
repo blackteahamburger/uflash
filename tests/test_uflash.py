@@ -2,10 +2,10 @@
 """
 Tests for the uflash module.
 """
+
 import ctypes
 import os
 import os.path
-import sys
 import tempfile
 import time
 import threading
@@ -22,6 +22,12 @@ TEST_SCRIPT = b"""from microbit import *
 
 display.scroll('Hello, World!')
 """
+
+TEST_SCRIPT_TO_MINIFY = b"""from microbit import * # import microbit module
+
+display.scroll('Hello, World!') # display "Hello, World!" on micro:bit
+"""
+
 TEST_SCRIPT_HEXLIFIED = (
     ":020000040003F7\n"
     ":10E000004D50380066726F6D206D6963726F626982\n"
@@ -140,6 +146,14 @@ def test_get_version():
     """
     result = uflash.get_version()
     assert result == ".".join([str(i) for i in uflash._VERSION])
+
+
+def test_minify():
+    """
+    Ensure that the minify function returns a minified version of the script.
+    """
+    minified = uflash.minify(TEST_SCRIPT_TO_MINIFY)
+    assert minified == TEST_SCRIPT
 
 
 def test_unhexlify():
@@ -280,9 +294,7 @@ def test_find_microbit_nt_exists():
     with mock.patch("os.name", "nt"):
         with mock.patch("os.path.exists", return_value=True):
             return_value = ctypes.create_unicode_buffer("MICROBIT")
-            with mock.patch(
-                "ctypes.create_unicode_buffer", return_value=return_value
-            ):
+            with mock.patch("ctypes.create_unicode_buffer", return_value=return_value):
                 ctypes.windll = mock_windll
                 assert uflash.find_microbit() == "A:\\"
 
@@ -299,9 +311,7 @@ def test_find_microbit_nt_missing():
     with mock.patch("os.name", "nt"):
         with mock.patch("os.path.exists", return_value=True):
             return_value = ctypes.create_unicode_buffer(1024)
-            with mock.patch(
-                "ctypes.create_unicode_buffer", return_value=return_value
-            ):
+            with mock.patch("ctypes.create_unicode_buffer", return_value=return_value):
                 ctypes.windll = mock_windll
                 assert uflash.find_microbit() is None
 
@@ -331,9 +341,7 @@ def test_find_microbit_nt_removable_only():
     with mock.patch("os.name", "nt"):
         with mock.patch("os.path.exists", return_value=True):
             return_value = ctypes.create_unicode_buffer("MICROBIT")
-            with mock.patch(
-                "ctypes.create_unicode_buffer", return_value=return_value
-            ):
+            with mock.patch("ctypes.create_unicode_buffer", return_value=return_value):
                 ctypes.windll = mock_windll
                 assert uflash.find_microbit() == "B:\\"
 
@@ -506,26 +514,23 @@ def test_flash_with_path_to_runtime():
     Use the referenced runtime hex file when building the hex file to be
     flashed onto the device.
     """
-    mock_o = mock.mock_open(read_data=b'script')
-    with mock.patch.object(builtins, 'open', mock_o) as mock_open:
-        with mock.patch('uflash.uflash.embed_fs_uhex', return_value='foo') as em_h:
-            with mock.patch('uflash.uflash.find_microbit', return_value='bar'):
-                with mock.patch('uflash.uflash.save_hex') as mock_save:
-                    uflash.flash('tests/example.py',
-                                 path_to_runtime='tests/fake.hex')
-                    assert mock_open.call_args[0][0] == 'tests/fake.hex'
-                    assert em_h.call_args[0][0] == b'script'
-                    expected_hex_path = os.path.join('bar', 'micropython.hex')
-                    mock_save.assert_called_once_with('foo', expected_hex_path)
+    mock_o = mock.mock_open(read_data=b"script")
+    with mock.patch.object(builtins, "open", mock_o) as mock_open:
+        with mock.patch("uflash.uflash.embed_fs_uhex", return_value="foo") as em_h:
+            with mock.patch("uflash.uflash.find_microbit", return_value="bar"):
+                with mock.patch("uflash.uflash.save_hex") as mock_save:
+                    uflash.flash("tests/example.py", path_to_runtime="tests/fake.hex")
+                    assert mock_open.call_args[0][0] == "tests/fake.hex"
+                    assert em_h.call_args[0][0] == b"script"
+                    expected_hex_path = os.path.join("bar", "micropython.hex")
+                    mock_save.assert_called_once_with("foo", expected_hex_path)
 
 
 def test_main_keepname_message(capsys):
     """
     Ensure that the correct message appears when called as from py2hex.
     """
-    uflash.flash(
-        "tests/example.py", paths_to_microbits=["tests"], keepname=True
-    )
+    uflash.flash("tests/example.py", paths_to_microbits=["tests"], keepname=True)
     stdout, stderr = capsys.readouterr()
     expected = "Hexifying example.py as: {}".format(
         os.path.join("tests", "example.hex")
@@ -546,9 +551,7 @@ def test_flash_with_python_script():
                 runtime = str(importlib_files("uflash") / "firmware.hex")
                 with open(runtime) as runtime_file:
                     runtime = runtime_file.read()
-                mock_embed_fs_uhex.assert_called_once_with(
-                    runtime, python_script
-                )
+                mock_embed_fs_uhex.assert_called_once_with(runtime, python_script)
 
 
 def test_flash_cannot_find_microbit():
@@ -576,7 +579,10 @@ def test_main_no_args():
         with mock.patch("uflash.uflash.flash") as mock_flash:
             uflash.main()
             mock_flash.assert_called_once_with(
-                path_to_python=None, paths_to_microbits=[], path_to_runtime=None, keepname=False
+                path_to_python=None,
+                paths_to_microbits=[],
+                path_to_runtime=None,
+                keepname=False,
             )
 
 
@@ -588,7 +594,10 @@ def test_main_first_arg_python():
     with mock.patch("uflash.uflash.flash") as mock_flash:
         uflash.main(argv=["foo.py"])
         mock_flash.assert_called_once_with(
-            path_to_python="foo.py", paths_to_microbits=[], path_to_runtime=None, keepname=False
+            path_to_python="foo.py",
+            paths_to_microbits=[],
+            path_to_runtime=None,
+            keepname=False,
         )
 
 
@@ -640,10 +649,10 @@ def test_flash_raises(capsys):
     """
     with mock.patch("uflash.uflash.flash", side_effect=RuntimeError("boom")):
         with pytest.raises(SystemExit):
-            uflash.main(argv=["test.py"])
+            uflash.main(argv=["-r", "foo.hex", "test.py"])
 
     _, stderr = capsys.readouterr()
-    expected = "Error flashing test.py"
+    expected = "Error flashing test.py to microbit with runtime foo.hex: boom"
     assert expected in stderr
 
 
@@ -688,6 +697,7 @@ def test_watch_raises(capsys):
     expected = "Error watching test.py"
     assert expected in stderr
 
+
 def test_main_two_args():
     """
     If there are two arguments passed into main, then it should pass them onto
@@ -699,6 +709,35 @@ def test_main_two_args():
             path_to_python="foo.py",
             paths_to_microbits=["/media/foo/bar"],
             path_to_runtime=None,
+            keepname=False,
+        )
+
+
+def test_main_runtime():
+    """
+    If there are three arguments passed into main, then it should pass them
+    onto the flash() function.
+    """
+    with mock.patch("uflash.uflash.flash") as mock_flash:
+        uflash.main(argv=["-rbaz.hex", "foo.py", "/media/foo/bar"])
+        mock_flash.assert_called_once_with(
+            path_to_python="foo.py",
+            paths_to_microbits=["/media/foo/bar"],
+            path_to_runtime="baz.hex",
+            keepname=False,
+        )
+
+
+def test_main_named_args():
+    """
+    Ensure that named arguments are passed on properly to the flash() function.
+    """
+    with mock.patch("uflash.uflash.flash") as mock_flash:
+        uflash.main(argv=["-r", "baz.hex"])
+        mock_flash.assert_called_once_with(
+            path_to_python=None,
+            paths_to_microbits=[],
+            path_to_runtime="baz.hex",
             keepname=False,
         )
 
@@ -736,8 +775,29 @@ def test_main_watch_flag():
     with mock.patch("uflash.uflash.watch_file") as mock_watch_file:
         uflash.main(argv=["-w"])
         mock_watch_file.assert_called_once_with(
-            None, uflash.flash, path_to_python=None, paths_to_microbits=[], path_to_runtime=None
+            None,
+            uflash.flash,
+            path_to_python=None,
+            paths_to_microbits=[],
+            path_to_runtime=None,
         )
+
+
+def test_extract_command_source_only():
+    """
+    If there is no target file the extract command should write to stdout.
+    """
+    mock_e = mock.MagicMock(return_value=b'print("hello, world!")')
+    mock_o = mock.mock_open(read_data="script")
+    with (
+        mock.patch("uflash.uflash.extract_script", mock_e) as mock_extract_script,
+        mock.patch.object(builtins, "open", mock_o) as mock_open,
+        mock.patch.object(builtins, "print") as mock_print,
+    ):
+        uflash.main(argv=["-e", "hex.hex"])
+        mock_open.assert_any_call("hex.hex", "r")
+        mock_extract_script.assert_called_once_with("script")
+        mock_print.assert_any_call(b'print("hello, world!")')
 
 
 def test_watch_no_source():
@@ -798,12 +858,14 @@ def test_py2hex_runtime_arg():
     """
     Test a simple call to main().
     """
-    with mock.patch('uflash.uflash.flash') as mock_flash:
-        uflash.py2hex(argv=['tests/example.py', '-r', 'tests/fake.hex'])
-        mock_flash.assert_called_once_with(path_to_python='tests/example.py',
-                                           paths_to_microbits=['tests'],
-                                           path_to_runtime='tests/fake.hex',
-                                           keepname=True)
+    with mock.patch("uflash.uflash.flash") as mock_flash:
+        uflash.py2hex(argv=["tests/example.py", "-r", "tests/fake.hex"])
+        mock_flash.assert_called_once_with(
+            path_to_python="tests/example.py",
+            paths_to_microbits=["tests"],
+            path_to_runtime="tests/fake.hex",
+            keepname=True,
+        )
 
 
 def test_py2hex_outdir_arg():
@@ -825,13 +887,11 @@ def test_bytes_to_ihex():
     Test bytes_to_ihex golden path for V1.
     """
     data = b"A" * 32
-    expected_result = "\n".join(
-        [
-            ":020000040003F7",
-            ":108C10004141414141414141414141414141414144",
-            ":108C20004141414141414141414141414141414134",
-        ]
-    )
+    expected_result = "\n".join([
+        ":020000040003F7",
+        ":108C10004141414141414141414141414141414144",
+        ":108C20004141414141414141414141414141414134",
+    ])
 
     result = uflash.bytes_to_ihex(0x38C10, data, universal_data_record=False)
 
@@ -843,13 +903,11 @@ def test_bytes_to_ihex_universal():
     Test bytes_to_ihex golden path for V2.
     """
     data = b"A" * 32
-    expected_result = "\n".join(
-        [
-            ":020000040003F7",
-            ":108C100D4141414141414141414141414141414137",
-            ":108C200D4141414141414141414141414141414127",
-        ]
-    )
+    expected_result = "\n".join([
+        ":020000040003F7",
+        ":108C100D4141414141414141414141414141414137",
+        ":108C200D4141414141414141414141414141414127",
+    ])
 
     result = uflash.bytes_to_ihex(0x38C10, data, universal_data_record=True)
 
@@ -861,14 +919,12 @@ def test_bytes_to_ihex_inner_extended_linear_address_record():
     Test bytes_to_ihex golden path for V2.
     """
     data = b"A" * 32
-    expected_result = "\n".join(
-        [
-            ":020000040003F7",
-            ":10FFF00D41414141414141414141414141414141E4",
-            ":020000040004F6",
-            ":1000000D41414141414141414141414141414141D3",
-        ]
-    )
+    expected_result = "\n".join([
+        ":020000040003F7",
+        ":10FFF00D41414141414141414141414141414141E4",
+        ":020000040004F6",
+        ":1000000D41414141414141414141414141414141D3",
+    ])
 
     result = uflash.bytes_to_ihex(0x3FFF0, data, universal_data_record=True)
 
@@ -880,40 +936,39 @@ def test_script_to_fs():
     Test script_to_fs with a random example without anything special about it.
     """
     script = b"A" * 364
-    expected_result = "\n".join(
-        [
-            ":020000040003F7",
-            ":108C0000FE79076D61696E2E7079414141414141A4",
-            ":108C10004141414141414141414141414141414144",
-            ":108C20004141414141414141414141414141414134",
-            ":108C30004141414141414141414141414141414124",
-            ":108C40004141414141414141414141414141414114",
-            ":108C50004141414141414141414141414141414104",
-            ":108C600041414141414141414141414141414141F4",
-            ":108C70004141414141414141414141414141410223",
-            ":108C80000141414141414141414141414141414114",
-            ":108C900041414141414141414141414141414141C4",
-            ":108CA00041414141414141414141414141414141B4",
-            ":108CB00041414141414141414141414141414141A4",
-            ":108CC0004141414141414141414141414141414194",
-            ":108CD0004141414141414141414141414141414184",
-            ":108CE0004141414141414141414141414141414174",
-            ":108CF00041414141414141414141414141414103A2",
-            ":108D00000241414141414141414141414141414192",
-            ":108D10004141414141414141414141414141414143",
-            ":108D20004141414141414141414141414141414133",
-            ":108D30004141414141414141414141414141414123",
-            ":108D40004141414141414141414141414141414113",
-            ":108D50004141414141414141414141414141414103",
-            ":108D600041414141414141414141414141414141F3",
-            ":108D700041414141414141414141FFFFFFFFFFFF6F",
-            ":01F80000FD0A",
-            "",
-        ]
-    )
+    expected_result = "\n".join([
+        ":020000040003F7",
+        ":108C0000FE79076D61696E2E7079414141414141A4",
+        ":108C10004141414141414141414141414141414144",
+        ":108C20004141414141414141414141414141414134",
+        ":108C30004141414141414141414141414141414124",
+        ":108C40004141414141414141414141414141414114",
+        ":108C50004141414141414141414141414141414104",
+        ":108C600041414141414141414141414141414141F4",
+        ":108C70004141414141414141414141414141410223",
+        ":108C80000141414141414141414141414141414114",
+        ":108C900041414141414141414141414141414141C4",
+        ":108CA00041414141414141414141414141414141B4",
+        ":108CB00041414141414141414141414141414141A4",
+        ":108CC0004141414141414141414141414141414194",
+        ":108CD0004141414141414141414141414141414184",
+        ":108CE0004141414141414141414141414141414174",
+        ":108CF00041414141414141414141414141414103A2",
+        ":108D00000241414141414141414141414141414192",
+        ":108D10004141414141414141414141414141414143",
+        ":108D20004141414141414141414141414141414133",
+        ":108D30004141414141414141414141414141414123",
+        ":108D40004141414141414141414141414141414113",
+        ":108D50004141414141414141414141414141414103",
+        ":108D600041414141414141414141414141414141F3",
+        ":108D700041414141414141414141FFFFFFFFFFFF6F",
+        ":01F80000FD0A",
+        "",
+    ])
 
-    with mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00), mock.patch(
-        "uflash._FS_END_ADDR_V1", 0x3F800
+    with (
+        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
         result = uflash.script_to_fs(script, uflash._MICROBIT_ID_V1)
 
@@ -925,24 +980,23 @@ def test_script_to_fs_short():
     Test script_to_fs with a script smaller than a fs chunk.
     """
     script = b"Very short example"
-    expected_result = "\n".join(
-        [
-            ":020000040003F7",
-            ":108C0000FE1B076D61696E2E70795665727920734F",
-            ":108C1000686F7274206578616D706C65FFFFFFFF8F",
-            ":108C2000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF54",
-            ":108C3000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF44",
-            ":108C4000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF34",
-            ":108C5000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF24",
-            ":108C6000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF14",
-            ":108C7000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF04",
-            ":01F80000FD0A",
-            "",
-        ]
-    )
+    expected_result = "\n".join([
+        ":020000040003F7",
+        ":108C0000FE1B076D61696E2E70795665727920734F",
+        ":108C1000686F7274206578616D706C65FFFFFFFF8F",
+        ":108C2000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF54",
+        ":108C3000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF44",
+        ":108C4000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF34",
+        ":108C5000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF24",
+        ":108C6000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF14",
+        ":108C7000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF04",
+        ":01F80000FD0A",
+        "",
+    ])
 
-    with mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00), mock.patch(
-        "uflash._FS_END_ADDR_V1", 0x3F800
+    with (
+        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
         result = uflash.script_to_fs(script, uflash._MICROBIT_ID_V1)
 
@@ -956,8 +1010,9 @@ def test_script_to_fs_two_chunks():
     expected_result_v1 = "\n".join(TEST_SCRIPT_FS_V1_HEX_LIST + [""])
     expected_result_v2 = "\n".join(TEST_SCRIPT_FS_V2_HEX_LIST + [""])
 
-    with mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00), mock.patch(
-        "uflash._FS_END_ADDR_V1", 0x3F800
+    with (
+        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
         result_v1 = uflash.script_to_fs(TEST_SCRIPT_FS, uflash._MICROBIT_ID_V1)
         result_v2 = uflash.script_to_fs(TEST_SCRIPT_FS, uflash._MICROBIT_ID_V2)
@@ -974,88 +1029,77 @@ def test_script_to_fs_chunk_boundary():
         b"This is an edge case test to fill the last byte of "
         b"the first chunk.\n" + (b"A" * 48)
     )
-    expected_result_short = "\n".join(
-        [
-            ":020000040003F7",
-            ":108C0000FE7D076D61696E2E707954686973206905",
-            ":108C10007320616E206564676520636173652074ED",
-            ":108C200065737420746F2066696C6C2074686520AD",
-            ":108C30006C6173742062797465206F662074686556",
-            ":108C4000206669727374206368756E6B2E0A4141E9",
-            ":108C50004141414141414141414141414141414104",
-            ":108C600041414141414141414141414141414141F4",
-            ":108C70004141414141414141414141414141FFFF68",
-            ":01F80000FD0A",
-            "",
-        ]
-    )
+    expected_result_short = "\n".join([
+        ":020000040003F7",
+        ":108C0000FE7D076D61696E2E707954686973206905",
+        ":108C10007320616E206564676520636173652074ED",
+        ":108C200065737420746F2066696C6C2074686520AD",
+        ":108C30006C6173742062797465206F662074686556",
+        ":108C4000206669727374206368756E6B2E0A4141E9",
+        ":108C50004141414141414141414141414141414104",
+        ":108C600041414141414141414141414141414141F4",
+        ":108C70004141414141414141414141414141FFFF68",
+        ":01F80000FD0A",
+        "",
+    ])
     script_exact = (
         b"This is an edge case test to fill the last byte of "
         b"the first chunk.\n" + (b"A" * 49)
     )
-    expected_result_exact = "\n".join(
-        [
-            ":020000040003F7",
-            ":108C0000FE00076D61696E2E707954686973206982",
-            ":108C10007320616E206564676520636173652074ED",
-            ":108C200065737420746F2066696C6C2074686520AD",
-            ":108C30006C6173742062797465206F662074686556",
-            ":108C4000206669727374206368756E6B2E0A4141E9",
-            ":108C50004141414141414141414141414141414104",
-            ":108C600041414141414141414141414141414141F4",
-            ":108C70004141414141414141414141414141410223",
-            ":108C800001FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF2",
-            ":108C9000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE4",
-            ":108CA000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD4",
-            ":108CB000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC4",
-            ":108CC000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB4",
-            ":108CD000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA4",
-            ":108CE000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF94",
-            ":108CF000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF84",
-            ":01F80000FD0A",
-            "",
-        ]
-    )
+    expected_result_exact = "\n".join([
+        ":020000040003F7",
+        ":108C0000FE00076D61696E2E707954686973206982",
+        ":108C10007320616E206564676520636173652074ED",
+        ":108C200065737420746F2066696C6C2074686520AD",
+        ":108C30006C6173742062797465206F662074686556",
+        ":108C4000206669727374206368756E6B2E0A4141E9",
+        ":108C50004141414141414141414141414141414104",
+        ":108C600041414141414141414141414141414141F4",
+        ":108C70004141414141414141414141414141410223",
+        ":108C800001FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF2",
+        ":108C9000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE4",
+        ":108CA000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD4",
+        ":108CB000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC4",
+        ":108CC000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB4",
+        ":108CD000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA4",
+        ":108CE000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF94",
+        ":108CF000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF84",
+        ":01F80000FD0A",
+        "",
+    ])
     script_large = (
         b"This is an edge case test to fill the last byte of "
         b"the first chunk.\n" + (b"A" * 50)
     )
-    expected_result_large = "\n".join(
-        [
-            ":020000040003F7",
-            ":108C0000FE01076D61696E2E707954686973206981",
-            ":108C10007320616E206564676520636173652074ED",
-            ":108C200065737420746F2066696C6C2074686520AD",
-            ":108C30006C6173742062797465206F662074686556",
-            ":108C4000206669727374206368756E6B2E0A4141E9",
-            ":108C50004141414141414141414141414141414104",
-            ":108C600041414141414141414141414141414141F4",
-            ":108C70004141414141414141414141414141410223",
-            ":108C80000141FFFFFFFFFFFFFFFFFFFFFFFFFFFFB0",
-            ":108C9000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE4",
-            ":108CA000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD4",
-            ":108CB000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC4",
-            ":108CC000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB4",
-            ":108CD000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA4",
-            ":108CE000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF94",
-            ":108CF000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF84",
-            ":01F80000FD0A",
-            "",
-        ]
-    )
+    expected_result_large = "\n".join([
+        ":020000040003F7",
+        ":108C0000FE01076D61696E2E707954686973206981",
+        ":108C10007320616E206564676520636173652074ED",
+        ":108C200065737420746F2066696C6C2074686520AD",
+        ":108C30006C6173742062797465206F662074686556",
+        ":108C4000206669727374206368756E6B2E0A4141E9",
+        ":108C50004141414141414141414141414141414104",
+        ":108C600041414141414141414141414141414141F4",
+        ":108C70004141414141414141414141414141410223",
+        ":108C80000141FFFFFFFFFFFFFFFFFFFFFFFFFFFFB0",
+        ":108C9000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE4",
+        ":108CA000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD4",
+        ":108CB000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC4",
+        ":108CC000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB4",
+        ":108CD000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA4",
+        ":108CE000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF94",
+        ":108CF000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF84",
+        ":01F80000FD0A",
+        "",
+    ])
 
-    with mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00), mock.patch(
-        "uflash._FS_END_ADDR_V1", 0x3F800
+    with (
+        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
-        result_short = uflash.script_to_fs(
-            script_short, uflash._MICROBIT_ID_V1
-        )
-        result_exact = uflash.script_to_fs(
-            script_exact, uflash._MICROBIT_ID_V1
-        )
-        result_large = uflash.script_to_fs(
-            script_large, uflash._MICROBIT_ID_V1
-        )
+        result_short = uflash.script_to_fs(script_short, uflash._MICROBIT_ID_V1)
+        result_exact = uflash.script_to_fs(script_exact, uflash._MICROBIT_ID_V1)
+        result_large = uflash.script_to_fs(script_large, uflash._MICROBIT_ID_V1)
 
     assert result_short == expected_result_short, script_short
     assert result_exact == expected_result_exact, script_exact
@@ -1091,15 +1135,12 @@ def test_script_to_fs_line_endings():
     script_cr_lines = TEST_SCRIPT_FS.replace(b"\n", b"\r")
     expected_result = "\n".join(TEST_SCRIPT_FS_V1_HEX_LIST + [""])
 
-    with mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00), mock.patch(
-        "uflash._FS_END_ADDR_V1", 0x3F800
+    with (
+        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
-        result_win = uflash.script_to_fs(
-            script_win_lines, uflash._MICROBIT_ID_V1
-        )
-        result_cr = uflash.script_to_fs(
-            script_cr_lines, uflash._MICROBIT_ID_V1
-        )
+        result_win = uflash.script_to_fs(script_win_lines, uflash._MICROBIT_ID_V1)
+        result_cr = uflash.script_to_fs(script_cr_lines, uflash._MICROBIT_ID_V1)
 
     assert result_win == expected_result
     assert result_cr == expected_result
@@ -1134,10 +1175,11 @@ def test_embed_fs_uhex():
         + TEST_UNIVERSAL_HEX_LIST[v2_fs_i:]
     )
 
-    with mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00), mock.patch(
-        "uflash._FS_END_ADDR_V1", 0x3F800
-    ), mock.patch("uflash.uflash._FS_START_ADDR_V2", 0x6D000), mock.patch(
-        "uflash._FS_END_ADDR_V2", 0x72000
+    with (
+        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
+        mock.patch("uflash.uflash._FS_START_ADDR_V2", 0x6D000),
+        mock.patch("uflash._FS_END_ADDR_V2", 0x72000),
     ):
         uhex_with_fs = uflash.embed_fs_uhex(uhex, TEST_SCRIPT_FS)
 
@@ -1243,17 +1285,14 @@ def test_embed_fs_uhex_extra_uicr_jump_record():
         + uhex_list[v2_fs_i:]
     )
 
-    with mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00), mock.patch(
-        "uflash._FS_END_ADDR_V1", 0x3F800
-    ), mock.patch("uflash.uflash._FS_START_ADDR_V2", 0x6D000), mock.patch(
-        "uflash._FS_END_ADDR_V2", 0x72000
+    with (
+        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
+        mock.patch("uflash.uflash._FS_START_ADDR_V2", 0x6D000),
+        mock.patch("uflash._FS_END_ADDR_V2", 0x72000),
     ):
-        uhex_ela_with_fs = uflash.embed_fs_uhex(
-            uhex_ela_record, TEST_SCRIPT_FS
-        )
-        uhex_esa_with_fs = uflash.embed_fs_uhex(
-            uhex_esa_record, TEST_SCRIPT_FS
-        )
+        uhex_ela_with_fs = uflash.embed_fs_uhex(uhex_ela_record, TEST_SCRIPT_FS)
+        uhex_esa_with_fs = uflash.embed_fs_uhex(uhex_esa_record, TEST_SCRIPT_FS)
 
     assert expected_uhex_ela_record == uhex_ela_with_fs
     assert uhex_ela_record_alignment == (len(uhex_ela_with_fs) % 512)
