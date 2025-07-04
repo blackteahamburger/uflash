@@ -78,6 +78,8 @@ the path to the Python script in as the first argument to the command::
     $ uflash my_script.py
     Flashing my_script.py to: /media/ntoll/MICROBIT/micropython.hex
 
+The script is minified by nudatus before flashing.
+
 You can let uflash watch for changes of your script. It will be flashed
 automatically every time you save it::
 
