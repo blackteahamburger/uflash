@@ -30,7 +30,8 @@ Flash Python onto the BBC micro:bit or extract Python from a .hex file.
 
 If no path to the micro:bit is provided uflash will attempt to autodetect the
 correct path to the device. If no path to the Python script is provided uflash
-will flash the unmodified MicroPython firmware onto the device. Use the -r flag to specify a custom
+will flash the unmodified MicroPython firmware onto the device.
+Use the -r flag to specify a custom
 version of the MicroPython runtime.
 
 Documentation is here: https://uflash.readthedocs.io/en/latest/
@@ -126,7 +127,9 @@ def script_to_fs(script, microbit_version_id):
     main_py_max_size = ((fs_size / chunk_size) * chunk_data_size) - 9
     if len(script) >= main_py_max_size:
         raise ValueError(
-            "Python script must be less than {} bytes.".format(main_py_max_size)
+            "Python script must be less than {} bytes.".format(
+                main_py_max_size
+            )
         )
 
     # First file chunk opens with:
@@ -159,14 +162,18 @@ def script_to_fs(script, microbit_version_id):
     if last_chunk_offset == 0:
         chunks[-1][-1] = len(chunks) + 1
         chunks.append(
-            bytearray(struct.pack("B", len(chunks)) + (b"\xff" * (chunk_size - 1)))
+            bytearray(
+                struct.pack("B", len(chunks)) + (b"\xff" * (chunk_size - 1))
+            )
         )
 
     # For Python2 compatibility we need to explicitly convert to bytes
     data = b"".join([bytes(c) for c in chunks])
     fs_ihex = bytes_to_ihex(fs_start_address, data, universal_data_record)
     # Add this byte after the fs flash area to configure the scratch page there
-    scratch_ihex = bytes_to_ihex(fs_end_address, b"\xfd", universal_data_record)
+    scratch_ihex = bytes_to_ihex(
+        fs_end_address, b"\xfd", universal_data_record
+    )
     # Remove scratch Extended Linear Address record if we are in the same range
     ela_record_len = 16
     if fs_ihex[:ela_record_len] == scratch_ihex[:ela_record_len]:
@@ -305,7 +312,10 @@ def bytes_to_ihex(addr, data, universal_data_record=False):
 
     def make_record(data):
         checksump = (-(sum(bytearray(data)))) & 0xFF
-        return ":%s%02X" % (str(binascii.hexlify(data), "utf-8").upper(), checksump)
+        return ":%s%02X" % (
+            str(binascii.hexlify(data), "utf-8").upper(),
+            checksump,
+        )
 
     # First create an Extended Linear Address Intel Hex record
     current_ela = (addr >> 16) & 0xFFFF
@@ -372,7 +382,11 @@ def extract_script(embedded_hex):
         if val[0:9] == ":02000004":
             # Reached an extended address record, check if within script range
             within_range = val[9:13].upper() == script_addr_high
-        elif within_range and val[0:3] == ":10" and val[3:7].upper() == script_addr_low:
+        elif (
+            within_range
+            and val[0:3] == ":10"
+            and val[3:7].upper() == script_addr_low
+        ):
             start_script = loc
             break
     if start_script:
@@ -384,7 +398,9 @@ def extract_script(embedded_hex):
                 break
         # Pass the extracted hex through unhexlify
         return unhexlify(
-            "\n".join(hex_lines[start_script - 1 : end_script if end_script else -6])
+            "\n".join(
+                hex_lines[start_script - 1 : end_script if end_script else -6]
+            )
         )
     return ""
 
@@ -446,7 +462,10 @@ def find_microbit():
                 #
                 if ctypes.windll.kernel32.GetDriveTypeW(path) != 2:
                     continue
-                if os.path.exists(path) and get_volume_name(path) == "MICROBIT":
+                if (
+                    os.path.exists(path)
+                    and get_volume_name(path) == "MICROBIT"
+                ):
                     return path
         finally:
             ctypes.windll.kernel32.SetErrorMode(old_mode)
@@ -605,9 +624,14 @@ def py2hex(argv=None):
     parser = argparse.ArgumentParser(description=_PY2HEX_HELP_TEXT)
     parser.add_argument("source", nargs="*", default=None)
     parser.add_argument(
-        "-r", "--runtime", default=None, help="Use the referenced MicroPython runtime."
+        "-r",
+        "--runtime",
+        default=None,
+        help="Use the referenced MicroPython runtime.",
     )
-    parser.add_argument("-o", "--outdir", default=None, help="Output directory")
+    parser.add_argument(
+        "-o", "--outdir", default=None, help="Output directory"
+    )
     parser.add_argument(
         "--version", action="version", version="%(prog)s " + get_version()
     )
@@ -644,7 +668,10 @@ def main(argv=None):
     parser.add_argument("source", nargs="?", default=None)
     parser.add_argument("target", nargs="*", default=None)
     parser.add_argument(
-        "-r", "--runtime", default=None, help="Use the referenced MicroPython runtime."
+        "-r",
+        "--runtime",
+        default=None,
+        help="Use the referenced MicroPython runtime.",
     )
     parser.add_argument(
         "-w",
@@ -657,7 +684,8 @@ def main(argv=None):
         "--extract",
         action="store_true",
         help=(
-            "Extract python source from a hex file instead of creating the hex file."
+            "Extract python source from a hex file"
+            "instead of creating the hex file."
         ),
     )
     parser.add_argument(
@@ -670,7 +698,10 @@ def main(argv=None):
             extract(args.source, args.target)
         except Exception as ex:
             error_message = "Error extracting {source}: {error!s}"
-            print(error_message.format(source=args.source, error=ex), file=sys.stderr)
+            print(
+                error_message.format(source=args.source, error=ex),
+                file=sys.stderr,
+            )
             sys.exit(1)
 
     elif args.watch:
@@ -699,11 +730,15 @@ def main(argv=None):
                 keepname=False,
             )
         except Exception as ex:
-            error_message = "Error flashing {source} to {target}{runtime}: {error!s}"
+            error_message = (
+                "Error flashing {source} to {target}{runtime}: {error!s}"
+            )
             source = args.source
             target = args.target if args.target else "microbit"
             if args.runtime:
-                runtime = " with runtime {runtime}".format(runtime=args.runtime)
+                runtime = " with runtime {runtime}".format(
+                    runtime=args.runtime
+                )
             else:
                 runtime = ""
             print(

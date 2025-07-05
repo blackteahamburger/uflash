@@ -261,7 +261,9 @@ def test_find_microbit_posix_exists():
     with open("tests/mount_exists.txt", "rb") as fixture_file:
         fixture = fixture_file.read()
         with mock.patch("os.name", "posix"):
-            with mock.patch("uflash.uflash.check_output", return_value=fixture):
+            with mock.patch(
+                "uflash.uflash.check_output", return_value=fixture
+            ):
                 assert uflash.find_microbit() == "/media/ntoll/MICROBIT"
 
 
@@ -273,7 +275,9 @@ def test_find_microbit_posix_missing():
     with open("tests/mount_missing.txt", "rb") as fixture_file:
         fixture = fixture_file.read()
         with mock.patch("os.name", "posix"):
-            with mock.patch("uflash.uflash.check_output", return_value=fixture):
+            with mock.patch(
+                "uflash.uflash.check_output", return_value=fixture
+            ):
                 assert uflash.find_microbit() is None
 
 
@@ -294,7 +298,9 @@ def test_find_microbit_nt_exists():
     with mock.patch("os.name", "nt"):
         with mock.patch("os.path.exists", return_value=True):
             return_value = ctypes.create_unicode_buffer("MICROBIT")
-            with mock.patch("ctypes.create_unicode_buffer", return_value=return_value):
+            with mock.patch(
+                "ctypes.create_unicode_buffer", return_value=return_value
+            ):
                 ctypes.windll = mock_windll
                 assert uflash.find_microbit() == "A:\\"
 
@@ -311,7 +317,9 @@ def test_find_microbit_nt_missing():
     with mock.patch("os.name", "nt"):
         with mock.patch("os.path.exists", return_value=True):
             return_value = ctypes.create_unicode_buffer(1024)
-            with mock.patch("ctypes.create_unicode_buffer", return_value=return_value):
+            with mock.patch(
+                "ctypes.create_unicode_buffer", return_value=return_value
+            ):
                 ctypes.windll = mock_windll
                 assert uflash.find_microbit() is None
 
@@ -341,7 +349,9 @@ def test_find_microbit_nt_removable_only():
     with mock.patch("os.name", "nt"):
         with mock.patch("os.path.exists", return_value=True):
             return_value = ctypes.create_unicode_buffer("MICROBIT")
-            with mock.patch("ctypes.create_unicode_buffer", return_value=return_value):
+            with mock.patch(
+                "ctypes.create_unicode_buffer", return_value=return_value
+            ):
                 ctypes.windll = mock_windll
                 assert uflash.find_microbit() == "B:\\"
 
@@ -516,10 +526,14 @@ def test_flash_with_path_to_runtime():
     """
     mock_o = mock.mock_open(read_data=b"script")
     with mock.patch.object(builtins, "open", mock_o) as mock_open:
-        with mock.patch("uflash.uflash.embed_fs_uhex", return_value="foo") as em_h:
+        with mock.patch(
+            "uflash.uflash.embed_fs_uhex", return_value="foo"
+        ) as em_h:
             with mock.patch("uflash.uflash.find_microbit", return_value="bar"):
                 with mock.patch("uflash.uflash.save_hex") as mock_save:
-                    uflash.flash("tests/example.py", path_to_runtime="tests/fake.hex")
+                    uflash.flash(
+                        "tests/example.py", path_to_runtime="tests/fake.hex"
+                    )
                     assert mock_open.call_args[0][0] == "tests/fake.hex"
                     assert em_h.call_args[0][0] == b"script"
                     expected_hex_path = os.path.join("bar", "micropython.hex")
@@ -530,7 +544,9 @@ def test_main_keepname_message(capsys):
     """
     Ensure that the correct message appears when called as from py2hex.
     """
-    uflash.flash("tests/example.py", paths_to_microbits=["tests"], keepname=True)
+    uflash.flash(
+        "tests/example.py", paths_to_microbits=["tests"], keepname=True
+    )
     stdout, stderr = capsys.readouterr()
     expected = "Hexifying example.py as: {}".format(
         os.path.join("tests", "example.hex")
@@ -546,12 +562,16 @@ def test_flash_with_python_script():
     python_script = b"import this"
     with mock.patch("uflash.uflash.save_hex"):
         with mock.patch("uflash.uflash.find_microbit", return_value="bar"):
-            with mock.patch("uflash.uflash.embed_fs_uhex") as mock_embed_fs_uhex:
+            with mock.patch(
+                "uflash.uflash.embed_fs_uhex"
+            ) as mock_embed_fs_uhex:
                 uflash.flash(python_script=python_script)
                 runtime = str(importlib_files("uflash") / "firmware.hex")
                 with open(runtime) as runtime_file:
                     runtime = runtime_file.read()
-                mock_embed_fs_uhex.assert_called_once_with(runtime, python_script)
+                mock_embed_fs_uhex.assert_called_once_with(
+                    runtime, python_script
+                )
 
 
 def test_flash_cannot_find_microbit():
@@ -689,7 +709,9 @@ def test_watch_raises(capsys):
     """
     If the watch system goes wrong, it should say that's what happened
     """
-    with mock.patch("uflash.uflash.watch_file", side_effect=RuntimeError("boom")):
+    with mock.patch(
+        "uflash.uflash.watch_file", side_effect=RuntimeError("boom")
+    ):
         with pytest.raises(SystemExit):
             uflash.main(argv=["--watch", "test.py"])
 
@@ -790,7 +812,9 @@ def test_extract_command_source_only():
     mock_e = mock.MagicMock(return_value=b'print("hello, world!")')
     mock_o = mock.mock_open(read_data="script")
     with (
-        mock.patch("uflash.uflash.extract_script", mock_e) as mock_extract_script,
+        mock.patch(
+            "uflash.uflash.extract_script", mock_e
+        ) as mock_extract_script,
         mock.patch.object(builtins, "open", mock_o) as mock_open,
         mock.patch.object(builtins, "print") as mock_print,
     ):
@@ -1097,9 +1121,15 @@ def test_script_to_fs_chunk_boundary():
         mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
-        result_short = uflash.script_to_fs(script_short, uflash._MICROBIT_ID_V1)
-        result_exact = uflash.script_to_fs(script_exact, uflash._MICROBIT_ID_V1)
-        result_large = uflash.script_to_fs(script_large, uflash._MICROBIT_ID_V1)
+        result_short = uflash.script_to_fs(
+            script_short, uflash._MICROBIT_ID_V1
+        )
+        result_exact = uflash.script_to_fs(
+            script_exact, uflash._MICROBIT_ID_V1
+        )
+        result_large = uflash.script_to_fs(
+            script_large, uflash._MICROBIT_ID_V1
+        )
 
     assert result_short == expected_result_short, script_short
     assert result_exact == expected_result_exact, script_exact
@@ -1139,8 +1169,12 @@ def test_script_to_fs_line_endings():
         mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
-        result_win = uflash.script_to_fs(script_win_lines, uflash._MICROBIT_ID_V1)
-        result_cr = uflash.script_to_fs(script_cr_lines, uflash._MICROBIT_ID_V1)
+        result_win = uflash.script_to_fs(
+            script_win_lines, uflash._MICROBIT_ID_V1
+        )
+        result_cr = uflash.script_to_fs(
+            script_cr_lines, uflash._MICROBIT_ID_V1
+        )
 
     assert result_win == expected_result
     assert result_cr == expected_result
@@ -1291,8 +1325,12 @@ def test_embed_fs_uhex_extra_uicr_jump_record():
         mock.patch("uflash.uflash._FS_START_ADDR_V2", 0x6D000),
         mock.patch("uflash._FS_END_ADDR_V2", 0x72000),
     ):
-        uhex_ela_with_fs = uflash.embed_fs_uhex(uhex_ela_record, TEST_SCRIPT_FS)
-        uhex_esa_with_fs = uflash.embed_fs_uhex(uhex_esa_record, TEST_SCRIPT_FS)
+        uhex_ela_with_fs = uflash.embed_fs_uhex(
+            uhex_ela_record, TEST_SCRIPT_FS
+        )
+        uhex_esa_with_fs = uflash.embed_fs_uhex(
+            uhex_esa_record, TEST_SCRIPT_FS
+        )
 
     assert expected_uhex_ela_record == uhex_ela_with_fs
     assert uhex_ela_record_alignment == (len(uhex_ela_with_fs) % 512)

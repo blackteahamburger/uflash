@@ -1,12 +1,9 @@
 XARGS := xargs -0 $(shell test $$(uname) = Linux && echo -r)
 GREP_T_FLAG := $(shell test $$(uname) = Linux && echo -T)
-BLACK_INSTALLED := $(shell python -m black --version 2>/dev/null)
 
 all:
 	@echo "\nThere is no default Makefile target right now. Try:\n"
 	@echo "make clean - reset the project and remove auto-generated assets."
-	@echo "make pyflakes - run the PyFlakes code checker."
-	@echo "make pep8 - run the PEP8 style checker."
 	@echo "make test - run the test suite."
 	@echo "make coverage - view a report on test coverage."
 	@echo "make check - run all the checkers and tests."
@@ -29,33 +26,13 @@ clean:
 	find . \( -name '*.bak' -o -name dropin.cache \) -print0 | $(XARGS) rm
 	find . \( -name '*.tgz' -o -name dropin.cache \) -print0 | $(XARGS) rm
 
-pyflakes:
-	find . \( -name _build -o -name var -o -path ./docs \) -type d -prune -o -name '*.py' -print0 | $(XARGS) pyflakes
-
-pep8: clean
-	find . \( -name _build -o -name var \) -type d -prune -o -name '*.py' -print0 | $(XARGS) -n 1 pycodestyle --repeat --exclude=build/*,docs/* --ignore=E731,E402,W504,W503,E203
-
 test: clean
 	py.test
 
 coverage: clean
 	py.test --cov-report term-missing --cov=uflash tests/
 
-tidy:
-ifdef BLACK_INSTALLED
-	python -m black -l79 .
-else
-	@echo Black not present
-endif
-
-black:
-ifdef BLACK_INSTALLED
-	python -m black --check -l79 .
-else
-	@echo Black not present
-endif
-
-check: clean pep8 pyflakes black coverage
+check: clean coverage
 
 package: check
 	python setup.py sdist

@@ -1,6 +1,5 @@
 pytest
-pycodestyle
-pyflakes
+flake8
 coverage
 sphinx
 pytest-cov
