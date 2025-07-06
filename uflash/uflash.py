@@ -46,7 +46,7 @@ microbit.  Accepts multiple input scripts and optionally one output directory.
 #: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION of uflash
 _VERSION = (
     2,
-    0,
+    1,
     0,
 )
 
