@@ -5,6 +5,13 @@ Release History
 -----
 
 * Updated to the latest version of MicroPython for micro:bit (1.1.1, 2.1.2).
+* Some flags dropped before are reintroduced:
+
+  * --runtime to specify a custom MicroPython runtime.
+  * --extract to extract a Python script from a hex file.
+
+* The script is minified by nudatus before flashing (original --minify by default).
+* The module is changed to be a package.
 
 2.0.0
 -----

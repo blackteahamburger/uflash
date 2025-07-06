@@ -123,13 +123,13 @@ or::
 py2hex
 ~~~~~~
 
-py2hex includes that same -r/--runtime option as uflash
-and adds an additional option -o/--outdir:
-
 To create output .hex files in the same directory as the input .py files::
 
    $ py2hex tests/example.py
    Hexifying example.py as: tests/example.hex
+
+py2hex includes that same -r/--runtime and -m/--minify options as uflash
+and adds an additional option -o/--outdir:
 
 To create output .hex files in a different directory::
 
