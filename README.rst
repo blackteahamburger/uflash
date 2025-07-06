@@ -26,14 +26,9 @@ Several essential operations are implemented:
 Installation
 ------------
 
-To install simply type::
+Download the source code and install the package using the following commands::
 
-    $ pip install uflash
-
-...and the package will download from PyPI. If you wish to upgrade to the
-latest version, use the following command::
-
-    $ pip install --no-cache --upgrade uflash
+    $ python setup.py install
 
 **NB:** You must use a USB *data* cable to connect the micro:bit to your
 computer (some cables are power only). You're in good shape if, when plugged
