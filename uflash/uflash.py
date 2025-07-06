@@ -684,7 +684,7 @@ def main(argv=None):
         "--extract",
         action="store_true",
         help=(
-            "Extract python source from a hex file"
+            "Extract python source from a hex file "
             "instead of creating the hex file."
         ),
     )
