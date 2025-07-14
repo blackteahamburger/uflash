@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from setuptools import setup
-from uflash import get_version
 
+from uflash import get_version
 
 with open("README.rst") as f:
     readme = f.read()

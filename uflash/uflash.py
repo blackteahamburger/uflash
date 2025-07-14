@@ -18,11 +18,11 @@ import ctypes
 import os
 import struct
 import sys
-from subprocess import check_output
 import time
-import nudatus
 from importlib.resources import files as importlib_files
+from subprocess import check_output
 
+import nudatus
 
 #: The help text to be shown by uflash  when requested.
 _HELP_TEXT = """
