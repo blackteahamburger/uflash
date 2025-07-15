@@ -44,11 +44,7 @@ microbit.  Accepts multiple input scripts and optionally one output directory.
 """
 
 #: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION of uflash
-_VERSION = (
-    2,
-    1,
-    0,
-)
+_VERSION = "2.1.0"
 
 #: The version number reported by the bundled MicroPython in os.uname().
 MICROPYTHON_V1_VERSION = "1.1.1"
@@ -71,13 +67,6 @@ _FS_END_ADDR_V2 = 0x72000
 _MAX_SIZE = min(
     _FS_END_ADDR_V2 - _FS_START_ADDR_V2, _FS_END_ADDR_V1 - _FS_START_ADDR_V1
 )
-
-
-def get_version():
-    """
-    Returns a string representation of the version information of this project.
-    """
-    return ".".join([str(i) for i in _VERSION])
 
 
 def minify(script):
@@ -633,7 +622,7 @@ def py2hex(argv=None):
         "-o", "--outdir", default=None, help="Output directory"
     )
     parser.add_argument(
-        "--version", action="version", version="%(prog)s " + get_version()
+        "--version", action="version", version="%(prog)s " + _VERSION
     )
     args = parser.parse_args(argv)
 
@@ -689,7 +678,7 @@ def main(argv=None):
         ),
     )
     parser.add_argument(
-        "--version", action="version", version="%(prog)s " + get_version()
+        "--version", action="version", version="%(prog)s " + _VERSION
     )
     args = parser.parse_args(argv)
 

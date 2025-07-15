@@ -3,20 +3,19 @@
 Tests for the uflash module.
 """
 
+import builtins
 import ctypes
 import os
 import os.path
 import tempfile
-import time
 import threading
+import time
 from importlib.resources import files as importlib_files
+from unittest import mock
 
 import pytest
+
 import uflash
-
-from unittest import mock
-import builtins
-
 
 TEST_SCRIPT = b"""from microbit import *
 
@@ -138,14 +137,6 @@ TEST_UNIVERSAL_HEX_LIST = [
 ]
 TEST_UHEX_V1_INSERTION_INDEX = 11
 TEST_UHEX_V2_INSERTION_INDEX = 20
-
-
-def test_get_version():
-    """
-    Ensure a call to get_version returns the expected string.
-    """
-    result = uflash.get_version()
-    assert result == ".".join([str(i) for i in uflash._VERSION])
 
 
 def test_minify():
@@ -644,7 +635,7 @@ def test_main_first_arg_version(capsys):
         uflash.main(argv=["--version"])
 
     stdout, stderr = capsys.readouterr()
-    expected = uflash.get_version()
+    expected = uflash._VERSION
     # On python 2 --version prints to stderr. On python 3 to stdout.
     # https://bugs.python.org/issue18920
     assert (expected in stdout) or (expected in stderr)
