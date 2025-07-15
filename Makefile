@@ -1,30 +1,32 @@
-XARGS := xargs -0 $(shell test $$(uname) = Linux && echo -r)
-GREP_T_FLAG := $(shell test $$(uname) = Linux && echo -T)
-
-all:
-	@echo "\nThere is no default Makefile target right now. Try:\n"
+help:
 	@echo "make clean - reset the project and remove auto-generated assets."
+	@echo "make ruff - run the Ruff linter."
+	@echo "make fix - run the Ruff linter and fix any issues it can."
 	@echo "make test - run the test suite."
 	@echo "make coverage - view a report on test coverage."
+	@echo "make format_check - run the Ruff formatter to check for formatting issues."
+	@echo "make format - run the Ruff formatter."
 	@echo "make check - run all the checkers and tests."
-	@echo "make package - create a deployable package for the project."
-	@echo "make rpm - create an rpm package for the project."
-	@echo "make publish - publish the project to PyPI."
 	@echo "make docs - run sphinx to create project documentation.\n"
 
 clean:
-	rm -rf build
-	rm -rf dist
-	rm -rf uflash.egg-info
+	rm -rf build/
+	rm -rf dist/
+	rm -rf .eggs/
+	find . -name '*.egg-info' -exec rm -rf {} +
+	find . -name '*.egg' -exec rm -f {} +
 	rm -rf .coverage
-	rm -rf .tox
 	rm -rf docs/_build
-	rm -f tests/example.hex
-	rm -rf deb_dist
-	rm -f uflash-*.tar.gz
-	find . \( -name '*.py[co]' -o -name dropin.cache \) -print0 | $(XARGS) rm
-	find . \( -name '*.bak' -o -name dropin.cache \) -print0 | $(XARGS) rm
-	find . \( -name '*.tgz' -o -name dropin.cache \) -print0 | $(XARGS) rm
+	find . -name '*.pyc' -exec rm -f {} +
+	find . -name '*.pyo' -exec rm -f {} +
+	find . -name '*~' -exec rm -f {} +
+	find . -name '__pycache__' -exec rm -rf {} +
+
+ruff:
+	ruff check
+
+fix:
+	ruff check --fix
 
 test: clean
 	py.test
@@ -32,20 +34,13 @@ test: clean
 coverage: clean
 	py.test --cov-report term-missing --cov=uflash tests/
 
-check: clean coverage
+format:
+	ruff format
 
-package: check
-	python setup.py sdist
+format_check:
+	ruff format --check
 
-rpm: check
-	python setup.py bdist_rpm
-
-publish: check
-	@echo "\nChecks pass, good to publish..."
-	python setup.py sdist upload
+check: clean ruff format_check coverage
 
 docs: clean
 	$(MAKE) -C docs html
-	@echo "\nDocumentation can be found here:"
-	@echo file://`pwd`/docs/_build/html/index.html
-	@echo "\n"
