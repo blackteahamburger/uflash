@@ -26,9 +26,10 @@ Several essential operations are implemented:
 Installation
 ------------
 
-Download the source code and install the package using the following commands::
+Download the source code and install the package using the following commands with build installed in your system::
 
-    $ python setup.py install
+    $ python -m build
+    $ pip install dist/uflash-<version>-py3-none-any.whl
 
 **NB:** You must use a USB *data* cable to connect the micro:bit to your
 computer (some cables are power only). You're in good shape if, when plugged
