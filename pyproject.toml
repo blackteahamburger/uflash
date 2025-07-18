@@ -29,6 +29,9 @@ classifiers = [
     "Topic :: Software Development :: Embedded Systems",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=5", "pytest-cov", "coverage", "sphinx", "ruff"]
+
 [project.urls]
 Homepage = "https://github.com/blackteahamburger/uflash"
 
@@ -38,3 +41,10 @@ py2hex = "uflash.uflash:py2hex"
 
 [tool.setuptools.dynamic]
 version = { attr = "uflash.uflash._VERSION" }
+
+[tool.ruff]
+preview = true
+unsafe-fixes = true
+target-version = "py313"
+line-length = 79
+builtins = ["_"]

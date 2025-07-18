@@ -1,9 +1,7 @@
-================================
-A community fork of uflash. PR welcome!
-================================
-
 uFlash
 ======
+
+A community fork of uflash. PR welcome!
 
 A utility for flashing the BBC micro:bit with Python scripts and the
 MicroPython runtime. You pronounce the name of this utility "micro-flash". ;-)
@@ -28,8 +26,7 @@ Installation
 
 Download the source code and install the package using the following commands with build installed in your system::
 
-    $ python -m build
-    $ pip install dist/uflash-<version>-py3-none-any.whl
+    $ pip install .
 
 **NB:** You must use a USB *data* cable to connect the micro:bit to your
 computer (some cables are power only). You're in good shape if, when plugged
@@ -165,12 +162,11 @@ repository with the following command::
 
     $ git clone https://github.com/blackteahamburger/uflash.git
 
-Ensure you have the correct dependencies for development installed by creating
-a virtualenv and running::
-
-    $ pip install -r requirements.txt
-
 To locally install your development version of the module into a virtualenv,
 run the following command::
 
-    $ python setup.py develop
+    $ pip install -e ".[dev]"
+
+This also ensures that you have the correct dependencies for development.
+
+There is a Makefile that helps with most of the common workflows associated with development.

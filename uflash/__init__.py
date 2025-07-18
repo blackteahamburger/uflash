@@ -1,4 +1,4 @@
-from uflash.uflash import *
+from uflash.uflash import *  # noqa: F403
 from uflash.uflash import (
     _FS_END_ADDR_V1 as _FS_END_ADDR_V1,
 )
