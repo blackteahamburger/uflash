@@ -8,7 +8,16 @@ dynamic = ["version"]
 description = "A module and utility to flash Python onto the BBC micro:bit."
 readme = "README.rst"
 license = "MIT"
+license-files = ["LICENSE", "AUTHORS"]
 authors = [
+    { name = "Blackteahamburger", email = "blackteahamburger@outlook.com" },
+    { name = "Nicholas H.Tollervey", email = "ntoll@ntoll.org" },
+    { name = "Matt Wheeler", email = "m@funkyhat.org" },
+    { name = "Tom Viner", email = "uflash@viner.tv" },
+    { name = "Tom Gurion", email = "nagasaki45@gmail.com" },
+    { name = "Scott Webster", email = "ScottDWebsterNJ@gmail.com" },
+]
+maintainers = [
     { name = "Blackteahamburger", email = "blackteahamburger@outlook.com" },
 ]
 requires-python = ">=3.9"
