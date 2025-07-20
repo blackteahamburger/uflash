@@ -22,11 +22,6 @@ TEST_SCRIPT = b"""from microbit import *
 display.scroll('Hello, World!')
 """
 
-TEST_SCRIPT_TO_MINIFY = b"""from microbit import * # import microbit module
-
-display.scroll('Hello, World!') # display "Hello, World!" on micro:bit
-"""
-
 TEST_SCRIPT_HEXLIFIED = (
     ":020000040003F7\n"
     ":10E000004D50380066726F6D206D6963726F626982\n"
@@ -135,16 +130,30 @@ TEST_UNIVERSAL_HEX_LIST = [
     ":00000001FF",
     "",
 ]
-TEST_UHEX_V1_INSERTION_INDEX = 11
-TEST_UHEX_V2_INSERTION_INDEX = 20
 
 
 def test_minify():
     """
     Ensure that the minify function returns a minified version of the script.
     """
-    minified = uflash.minify(TEST_SCRIPT_TO_MINIFY)
+    minified = uflash.minify(b"""from microbit import * # import microbit module
+
+display.scroll('Hello, World!') # display "Hello, World!" on micro:bit
+""")
     assert minified == TEST_SCRIPT
+
+
+def test_minify_raises_if_too_long():
+    """
+    Test that minify raises ValueError if the minified script is too long.
+    """
+    long_script = b"x" * (uflash._MAX_SIZE + 10)
+    with pytest.raises(ValueError) as ex:
+        uflash.minify(long_script)
+    assert (
+        ex.value.args[0]
+        == "Python Script is still too long after minification"
+    )
 
 
 def test_unhexlify():
@@ -711,6 +720,19 @@ def test_watch_raises(capsys):
     assert expected in stderr
 
 
+def test_extract_raises(capsys):
+    """
+    If the extract system goes wrong, it should say that's what happened
+    """
+    with mock.patch("uflash.uflash.extract", side_effect=RuntimeError("boom")):
+        with pytest.raises(SystemExit):
+            uflash.main(argv=["--extract", "test.py"])
+
+    _, stderr = capsys.readouterr()
+    expected = "Error extracting test.py"
+    assert expected in stderr
+
+
 def test_main_two_args():
     """
     If there are two arguments passed into main, then it should pass them onto
@@ -796,6 +818,43 @@ def test_main_watch_flag():
         )
 
 
+def test_extract_command():
+    """
+    Test the command-line script extract feature
+    """
+    with mock.patch("uflash.uflash.extract") as mock_extract:
+        uflash.main(argv=["-e", "hex.hex", "foo.py"])
+        mock_extract.assert_called_once_with("hex.hex", ["foo.py"])
+
+
+def test_extract_paths():
+    """
+    Test the different paths of the extract() function.
+    It should open and extract the contents of the file (input arg)
+    When called with only an input it should print the output of extract_script
+    When called with two arguments it should write the output to the output arg
+    """
+    mock_e = mock.MagicMock(return_value=b'print("hello, world!")')
+    mock_o = mock.mock_open(read_data="script")
+
+    with (
+        mock.patch(
+            "uflash.uflash.extract_script", mock_e
+        ) as mock_extract_script,
+        mock.patch.object(builtins, "print") as mock_print,
+        mock.patch.object(builtins, "open", mock_o) as mock_open,
+    ):
+        uflash.extract("foo.hex")
+        mock_open.assert_called_once_with("foo.hex", "r")
+        mock_extract_script.assert_called_once_with("script")
+        mock_print.assert_called_once_with(b'print("hello, world!")')
+
+        uflash.extract("foo.hex", "out.py")
+        assert mock_open.call_count == 3
+        mock_open.assert_called_with("out.py", "w")
+        assert mock_open.return_value.write.call_count == 1
+
+
 def test_extract_command_source_only():
     """
     If there is no target file the extract command should write to stdout.
@@ -813,6 +872,14 @@ def test_extract_command_source_only():
         mock_open.assert_any_call("hex.hex", "r")
         mock_extract_script.assert_called_once_with("script")
         mock_print.assert_any_call(b'print("hello, world!")')
+
+
+def test_extract_command_no_source():
+    """
+    If there is no source file the extract command should complain
+    """
+    with pytest.raises(TypeError):
+        uflash.extract(None, None)
 
 
 def test_watch_no_source():
