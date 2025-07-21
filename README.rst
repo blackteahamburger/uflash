@@ -24,7 +24,7 @@ Several essential operations are implemented:
 Installation
 ------------
 
-Download the source code and install the package using the following commands with build installed in your system::
+Download the source code and install the package using the following command::
 
     $ pip install .
 
