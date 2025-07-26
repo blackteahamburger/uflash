@@ -261,9 +261,7 @@ def test_find_microbit_posix_exists():
     with open("tests/mount_exists.txt", "rb") as fixture_file:
         fixture = fixture_file.read()
         with mock.patch("os.name", "posix"):
-            with mock.patch(
-                "uflash.uflash.check_output", return_value=fixture
-            ):
+            with mock.patch("uflash.check_output", return_value=fixture):
                 assert uflash.find_microbit() == "/media/ntoll/MICROBIT"
 
 
@@ -275,9 +273,7 @@ def test_find_microbit_posix_missing():
     with open("tests/mount_missing.txt", "rb") as fixture_file:
         fixture = fixture_file.read()
         with mock.patch("os.name", "posix"):
-            with mock.patch(
-                "uflash.uflash.check_output", return_value=fixture
-            ):
+            with mock.patch("uflash.check_output", return_value=fixture):
                 assert uflash.find_microbit() is None
 
 
@@ -414,8 +410,8 @@ def test_flash_no_args():
     If no path to a Python script is supplied then just flash the unmodified
     MicroPython firmware onto the device.
     """
-    with mock.patch("uflash.uflash.find_microbit", return_value="foo"):
-        with mock.patch("uflash.uflash.save_hex") as mock_save:
+    with mock.patch("uflash.find_microbit", return_value="foo"):
+        with mock.patch("uflash.save_hex") as mock_save:
             uflash.flash()
             assert mock_save.call_count == 1
             runtime = str(importlib_files("uflash") / "firmware.hex")
@@ -433,8 +429,8 @@ def test_flash_has_python_no_path_to_microbit():
 
     The resulting payload should be a correctly created micropython.hex file.
     """
-    with mock.patch("uflash.uflash.find_microbit", return_value="foo"):
-        with mock.patch("uflash.uflash.save_hex") as mock_save:
+    with mock.patch("uflash.find_microbit", return_value="foo"):
+        with mock.patch("uflash.save_hex") as mock_save:
             uflash.flash("tests/example.py")
             assert mock_save.call_count == 1
             # Create the hex we're expecting to flash onto the device.
@@ -455,7 +451,7 @@ def test_flash_with_path_to_multiple_microbits():
     Flash the referenced paths to the micro:bit with a hex file generated from
     the MicroPython firmware and the referenced Python script.
     """
-    with mock.patch("uflash.uflash.save_hex") as mock_save:
+    with mock.patch("uflash.save_hex") as mock_save:
         uflash.flash("tests/example.py", ["test_path1", "test_path2"])
         assert mock_save.call_count == 2
         # Create the hex we're expecting to flash onto the device.
@@ -481,7 +477,7 @@ def test_flash_with_path_to_microbit():
     Flash the referenced path to the micro:bit with a hex file generated from
     the MicroPython firmware and the referenced Python script.
     """
-    with mock.patch("uflash.uflash.save_hex") as mock_save:
+    with mock.patch("uflash.save_hex") as mock_save:
         uflash.flash("tests/example.py", ["test_path"])
         assert mock_save.call_count == 1
         # Create the hex we're expecting to flash onto the device.
@@ -503,7 +499,7 @@ def test_flash_with_keepname():
     the MicroPython firmware and the referenced Python script and keep the
     original filename root.
     """
-    with mock.patch("uflash.uflash.save_hex") as mock_save:
+    with mock.patch("uflash.save_hex") as mock_save:
         uflash.flash("tests/example.py", ["test_path"], keepname=True)
         assert mock_save.call_count == 1
         # Create the hex we're expecting to flash onto the device.
@@ -526,11 +522,9 @@ def test_flash_with_path_to_runtime():
     """
     mock_o = mock.mock_open(read_data=b"script")
     with mock.patch.object(builtins, "open", mock_o) as mock_open:
-        with mock.patch(
-            "uflash.uflash.embed_fs_uhex", return_value="foo"
-        ) as em_h:
-            with mock.patch("uflash.uflash.find_microbit", return_value="bar"):
-                with mock.patch("uflash.uflash.save_hex") as mock_save:
+        with mock.patch("uflash.embed_fs_uhex", return_value="foo") as em_h:
+            with mock.patch("uflash.find_microbit", return_value="bar"):
+                with mock.patch("uflash.save_hex") as mock_save:
                     uflash.flash(
                         "tests/example.py", path_to_runtime="tests/fake.hex"
                     )
@@ -560,11 +554,9 @@ def test_flash_with_python_script():
     should hexlify that.
     """
     python_script = b"import this"
-    with mock.patch("uflash.uflash.save_hex"):
-        with mock.patch("uflash.uflash.find_microbit", return_value="bar"):
-            with mock.patch(
-                "uflash.uflash.embed_fs_uhex"
-            ) as mock_embed_fs_uhex:
+    with mock.patch("uflash.save_hex"):
+        with mock.patch("uflash.find_microbit", return_value="bar"):
+            with mock.patch("uflash.embed_fs_uhex") as mock_embed_fs_uhex:
                 uflash.flash(python_script=python_script)
                 runtime = str(importlib_files("uflash") / "firmware.hex")
                 with open(runtime) as runtime_file:
@@ -578,7 +570,7 @@ def test_flash_cannot_find_microbit():
     """
     Ensure an IOError is raised if it is not possible to find the micro:bit.
     """
-    with mock.patch("uflash.uflash.find_microbit", return_value=None):
+    with mock.patch("uflash.find_microbit", return_value=None):
         with pytest.raises(IOError) as ex:
             uflash.flash()
         expected = "Unable to find micro:bit. Is it plugged in?"
@@ -596,7 +588,7 @@ def test_main_no_args():
             "uflash",
         ],
     ):
-        with mock.patch("uflash.uflash.flash") as mock_flash:
+        with mock.patch("uflash.flash") as mock_flash:
             uflash.main()
             mock_flash.assert_called_once_with(
                 path_to_python=None,
@@ -611,7 +603,7 @@ def test_main_first_arg_python():
     If there is a single argument that ends with ".py", it calls flash with
     it as the path to the source Python file.
     """
-    with mock.patch("uflash.uflash.flash") as mock_flash:
+    with mock.patch("uflash.flash") as mock_flash:
         uflash.main(argv=["foo.py"])
         mock_flash.assert_called_once_with(
             path_to_python="foo.py",
@@ -667,7 +659,7 @@ def test_flash_raises(capsys):
     """
     If the flash system goes wrong, it should say that's what happened
     """
-    with mock.patch("uflash.uflash.flash", side_effect=RuntimeError("boom")):
+    with mock.patch("uflash.flash", side_effect=RuntimeError("boom")):
         with pytest.raises(SystemExit):
             uflash.main(argv=["-r", "foo.hex", "test.py"])
 
@@ -680,7 +672,7 @@ def test_flash_raises_with_info(capsys):
     """
     When flash goes wrong it should mention everything you tell it
     """
-    with mock.patch("uflash.uflash.flash", side_effect=RuntimeError("boom")):
+    with mock.patch("uflash.flash", side_effect=RuntimeError("boom")):
         with pytest.raises(SystemExit):
             uflash.main(argv=["test.py"])
 
@@ -688,7 +680,7 @@ def test_flash_raises_with_info(capsys):
     expected = "Error flashing test.py to microbit: boom\n"
     assert stderr == expected
 
-    with mock.patch("uflash.uflash.flash", side_effect=RuntimeError("boom")):
+    with mock.patch("uflash.flash", side_effect=RuntimeError("boom")):
         with pytest.raises(SystemExit):
             uflash.main(argv=["test.py", "D:\\"])
 
@@ -696,7 +688,7 @@ def test_flash_raises_with_info(capsys):
     expected = "Error flashing test.py to " + repr(["D:\\"]) + ": boom\n"
     assert stderr == expected
 
-    with mock.patch("uflash.uflash.flash", side_effect=RuntimeError("boom")):
+    with mock.patch("uflash.flash", side_effect=RuntimeError("boom")):
         with pytest.raises(SystemExit):
             uflash.main(argv=["test.py", "D:\\"])
 
@@ -709,9 +701,7 @@ def test_watch_raises(capsys):
     """
     If the watch system goes wrong, it should say that's what happened
     """
-    with mock.patch(
-        "uflash.uflash.watch_file", side_effect=RuntimeError("boom")
-    ):
+    with mock.patch("uflash.watch_file", side_effect=RuntimeError("boom")):
         with pytest.raises(SystemExit):
             uflash.main(argv=["--watch", "test.py"])
 
@@ -724,7 +714,7 @@ def test_extract_raises(capsys):
     """
     If the extract system goes wrong, it should say that's what happened
     """
-    with mock.patch("uflash.uflash.extract", side_effect=RuntimeError("boom")):
+    with mock.patch("uflash.extract", side_effect=RuntimeError("boom")):
         with pytest.raises(SystemExit):
             uflash.main(argv=["--extract", "test.py"])
 
@@ -738,7 +728,7 @@ def test_main_two_args():
     If there are two arguments passed into main, then it should pass them onto
     the flash() function.
     """
-    with mock.patch("uflash.uflash.flash", return_value=None) as mock_flash:
+    with mock.patch("uflash.flash", return_value=None) as mock_flash:
         uflash.main(argv=["foo.py", "/media/foo/bar"])
         mock_flash.assert_called_once_with(
             path_to_python="foo.py",
@@ -753,7 +743,7 @@ def test_main_runtime():
     If there are three arguments passed into main, then it should pass them
     onto the flash() function.
     """
-    with mock.patch("uflash.uflash.flash") as mock_flash:
+    with mock.patch("uflash.flash") as mock_flash:
         uflash.main(argv=["-rbaz.hex", "foo.py", "/media/foo/bar"])
         mock_flash.assert_called_once_with(
             path_to_python="foo.py",
@@ -767,7 +757,7 @@ def test_main_named_args():
     """
     Ensure that named arguments are passed on properly to the flash() function.
     """
-    with mock.patch("uflash.uflash.flash") as mock_flash:
+    with mock.patch("uflash.flash") as mock_flash:
         uflash.main(argv=["-r", "baz.hex"])
         mock_flash.assert_called_once_with(
             path_to_python=None,
@@ -782,7 +772,7 @@ def test_main_multiple_microbits():
     If there are more than two arguments passed into main, then it should pass
     them onto the flash() function.
     """
-    with mock.patch("uflash.uflash.flash", return_value=None) as mock_flash:
+    with mock.patch("uflash.flash", return_value=None) as mock_flash:
         uflash.main(
             argv=[
                 "foo.py",
@@ -807,7 +797,7 @@ def test_main_watch_flag():
     """
     The watch flag cause a call the correct function.
     """
-    with mock.patch("uflash.uflash.watch_file") as mock_watch_file:
+    with mock.patch("uflash.watch_file") as mock_watch_file:
         uflash.main(argv=["-w"])
         mock_watch_file.assert_called_once_with(
             None,
@@ -822,7 +812,7 @@ def test_extract_command():
     """
     Test the command-line script extract feature
     """
-    with mock.patch("uflash.uflash.extract") as mock_extract:
+    with mock.patch("uflash.extract") as mock_extract:
         uflash.main(argv=["-e", "hex.hex", "foo.py"])
         mock_extract.assert_called_once_with("hex.hex", ["foo.py"])
 
@@ -838,9 +828,7 @@ def test_extract_paths():
     mock_o = mock.mock_open(read_data="script")
 
     with (
-        mock.patch(
-            "uflash.uflash.extract_script", mock_e
-        ) as mock_extract_script,
+        mock.patch("uflash.extract_script", mock_e) as mock_extract_script,
         mock.patch.object(builtins, "print") as mock_print,
         mock.patch.object(builtins, "open", mock_o) as mock_open,
     ):
@@ -862,9 +850,7 @@ def test_extract_command_source_only():
     mock_e = mock.MagicMock(return_value=b'print("hello, world!")')
     mock_o = mock.mock_open(read_data="script")
     with (
-        mock.patch(
-            "uflash.uflash.extract_script", mock_e
-        ) as mock_extract_script,
+        mock.patch("uflash.extract_script", mock_e) as mock_extract_script,
         mock.patch.object(builtins, "open", mock_o) as mock_open,
         mock.patch.object(builtins, "print") as mock_print,
     ):
@@ -890,8 +876,8 @@ def test_watch_no_source():
         uflash.watch_file(None, lambda: "should never be called!")
 
 
-@mock.patch("uflash.uflash.time")
-@mock.patch("uflash.uflash.os")
+@mock.patch("uflash.time")
+@mock.patch("uflash.os")
 def test_watch_file(mock_os, mock_time):
     """
     Make sure that the callback is called each time the file changes.
@@ -926,7 +912,7 @@ def test_py2hex_one_arg():
     """
     Test a simple call to main().
     """
-    with mock.patch("uflash.uflash.flash") as mock_flash:
+    with mock.patch("uflash.flash") as mock_flash:
         uflash.py2hex(argv=["tests/example.py"])
         mock_flash.assert_called_once_with(
             path_to_python="tests/example.py",
@@ -940,7 +926,7 @@ def test_py2hex_runtime_arg():
     """
     Test a simple call to main().
     """
-    with mock.patch("uflash.uflash.flash") as mock_flash:
+    with mock.patch("uflash.flash") as mock_flash:
         uflash.py2hex(argv=["tests/example.py", "-r", "tests/fake.hex"])
         mock_flash.assert_called_once_with(
             path_to_python="tests/example.py",
@@ -954,7 +940,7 @@ def test_py2hex_outdir_arg():
     """
     Test a simple call to main().
     """
-    with mock.patch("uflash.uflash.flash") as mock_flash:
+    with mock.patch("uflash.flash") as mock_flash:
         uflash.py2hex(argv=["tests/example.py", "-o", "/tmp"])
         mock_flash.assert_called_once_with(
             path_to_python="tests/example.py",
@@ -1049,7 +1035,7 @@ def test_script_to_fs():
     ])
 
     with (
-        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
         result = uflash.script_to_fs(script, uflash._MICROBIT_ID_V1)
@@ -1077,7 +1063,7 @@ def test_script_to_fs_short():
     ])
 
     with (
-        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
         result = uflash.script_to_fs(script, uflash._MICROBIT_ID_V1)
@@ -1093,7 +1079,7 @@ def test_script_to_fs_two_chunks():
     expected_result_v2 = "\n".join(TEST_SCRIPT_FS_V2_HEX_LIST + [""])
 
     with (
-        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
         result_v1 = uflash.script_to_fs(TEST_SCRIPT_FS, uflash._MICROBIT_ID_V1)
@@ -1176,7 +1162,7 @@ def test_script_to_fs_chunk_boundary():
     ])
 
     with (
-        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
         result_short = uflash.script_to_fs(
@@ -1224,7 +1210,7 @@ def test_script_to_fs_line_endings():
     expected_result = "\n".join(TEST_SCRIPT_FS_V1_HEX_LIST + [""])
 
     with (
-        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
         result_win = uflash.script_to_fs(
@@ -1268,9 +1254,9 @@ def test_embed_fs_uhex():
     )
 
     with (
-        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
-        mock.patch("uflash.uflash._FS_START_ADDR_V2", 0x6D000),
+        mock.patch("uflash._FS_START_ADDR_V2", 0x6D000),
         mock.patch("uflash._FS_END_ADDR_V2", 0x72000),
     ):
         uhex_with_fs = uflash.embed_fs_uhex(uhex, TEST_SCRIPT_FS)
@@ -1378,9 +1364,9 @@ def test_embed_fs_uhex_extra_uicr_jump_record():
     )
 
     with (
-        mock.patch("uflash.uflash._FS_START_ADDR_V1", 0x38C00),
+        mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
-        mock.patch("uflash.uflash._FS_START_ADDR_V2", 0x6D000),
+        mock.patch("uflash._FS_START_ADDR_V2", 0x6D000),
         mock.patch("uflash._FS_END_ADDR_V2", 0x72000),
     ):
         uhex_ela_with_fs = uflash.embed_fs_uhex(

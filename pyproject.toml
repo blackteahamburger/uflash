@@ -45,11 +45,11 @@ dev = ["pytest>=5", "pytest-cov", "coverage", "sphinx", "ruff"]
 Homepage = "https://github.com/blackteahamburger/uflash"
 
 [project.scripts]
-uflash = "uflash.uflash:main"
-py2hex = "uflash.uflash:py2hex"
+uflash = "uflash:main"
+py2hex = "uflash:py2hex"
 
 [tool.setuptools.dynamic]
-version = { attr = "uflash.uflash._VERSION" }
+version = { attr = "uflash._VERSION" }
 
 [tool.ruff]
 preview = true
