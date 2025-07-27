@@ -10,7 +10,9 @@ import os.path
 import tempfile
 import threading
 import time
+from importlib.metadata import version
 from importlib.resources import files as importlib_files
+from typing import Literal
 from unittest import mock
 
 import pytest
@@ -132,7 +134,7 @@ TEST_UNIVERSAL_HEX_LIST = [
 ]
 
 
-def test_minify():
+def test_minify() -> None:
     """
     Ensure that the minify function returns a minified version of the script.
     """
@@ -143,11 +145,11 @@ display.scroll('Hello, World!') # display "Hello, World!" on micro:bit
     assert minified == TEST_SCRIPT
 
 
-def test_minify_raises_if_too_long():
+def test_minify_raises_if_too_long() -> None:
     """
     Test that minify raises ValueError if the minified script is too long.
     """
-    long_script = b"x" * (uflash._MAX_SIZE + 10)
+    long_script = b"x" * (uflash.MAX_SIZE + 10)
     with pytest.raises(ValueError) as ex:
         uflash.minify(long_script)
     assert (
@@ -156,7 +158,7 @@ def test_minify_raises_if_too_long():
     )
 
 
-def test_unhexlify():
+def test_unhexlify() -> None:
     """
     Ensure that we can get the script back out using unhexlify and that the
     result is a properly decoded string.
@@ -165,7 +167,7 @@ def test_unhexlify():
     assert unhexlified == TEST_SCRIPT.decode("utf-8")
 
 
-def test_unhexlify_not_python():
+def test_unhexlify_not_python() -> None:
     """
     Test that the MicroPython script start format is present.
     """
@@ -174,7 +176,7 @@ def test_unhexlify_not_python():
     )
 
 
-def test_unhexlify_bad_unicode():
+def test_unhexlify_bad_unicode() -> None:
     """
     Test that invalid Unicode is dealt gracefully returning an empty string.
     """
@@ -183,7 +185,7 @@ def test_unhexlify_bad_unicode():
     )
 
 
-def test_extract():
+def test_extract() -> None:
     """
     The script should be returned as a string (if there is one).
     """
@@ -202,7 +204,7 @@ def test_extract():
     assert extracted == TEST_SCRIPT.decode("utf-8")
 
 
-def test_extract_sandwiched():
+def test_extract_sandwiched() -> None:
     """
     The script hex is packed with additional data above and bellow and should
     still be returned as a the original string only.
@@ -229,14 +231,14 @@ def test_extract_sandwiched():
     assert extracted == TEST_SCRIPT.decode("utf-8")
 
 
-def test_extract_not_valid_hex():
+def test_extract_not_valid_hex() -> None:
     """
     Return a sensible message if the hex file isn't valid
     """
     assert uflash.extract_script("invalid input") == ""
 
 
-def test_extract_no_python():
+def test_extract_no_python() -> None:
     """
     Ensure that if there's no Python in the input hex then just return an empty
     (False) string.
@@ -253,7 +255,7 @@ def test_extract_no_python():
     assert uflash.extract_script(v1_hex_no_py_code) == ""
 
 
-def test_find_microbit_posix_exists():
+def test_find_microbit_posix_exists() -> None:
     """
     Simulate being on os.name == 'posix' and a call to "mount" returns a
     record indicating a connected micro:bit device.
@@ -265,7 +267,7 @@ def test_find_microbit_posix_exists():
                 assert uflash.find_microbit() == "/media/ntoll/MICROBIT"
 
 
-def test_find_microbit_posix_missing():
+def test_find_microbit_posix_missing() -> None:
     """
     Simulate being on os.name == 'posix' and a call to "mount" returns a
     no records associated with a micro:bit device.
@@ -277,7 +279,7 @@ def test_find_microbit_posix_missing():
                 assert uflash.find_microbit() is None
 
 
-def test_find_microbit_nt_exists():
+def test_find_microbit_nt_exists() -> None:
     """
     Simulate being on os.name == 'nt' and a disk with a volume name 'MICROBIT'
     exists indicating a connected micro:bit device.
@@ -297,11 +299,13 @@ def test_find_microbit_nt_exists():
             with mock.patch(
                 "ctypes.create_unicode_buffer", return_value=return_value
             ):
-                ctypes.windll = mock_windll
-                assert uflash.find_microbit() == "A:\\"
+                with mock.patch.object(
+                    ctypes, "windll", mock_windll, create=True
+                ):
+                    assert uflash.find_microbit() == "A:\\"
 
 
-def test_find_microbit_nt_missing():
+def test_find_microbit_nt_missing() -> None:
     """
     Simulate being on os.name == 'nt' and a disk with a volume name 'MICROBIT'
     does not exist for a micro:bit device.
@@ -316,11 +320,13 @@ def test_find_microbit_nt_missing():
             with mock.patch(
                 "ctypes.create_unicode_buffer", return_value=return_value
             ):
-                ctypes.windll = mock_windll
-                assert uflash.find_microbit() is None
+                with mock.patch.object(
+                    ctypes, "windll", mock_windll, create=True
+                ):
+                    assert uflash.find_microbit() is None
 
 
-def test_find_microbit_nt_removable_only():
+def test_find_microbit_nt_removable_only() -> None:
     """
     We should only be considering removable drives as candidates for
     micro:bit devices. (Especially so as to avoid interrogating disconnected
@@ -330,7 +336,7 @@ def test_find_microbit_nt_removable_only():
     to be removable
     """
 
-    def _drive_type(letter):
+    def _drive_type(letter: str) -> Literal[2] | Literal[4]:
         if letter == "B:\\":
             return 2  # removable
         else:
@@ -348,11 +354,13 @@ def test_find_microbit_nt_removable_only():
             with mock.patch(
                 "ctypes.create_unicode_buffer", return_value=return_value
             ):
-                ctypes.windll = mock_windll
-                assert uflash.find_microbit() == "B:\\"
+                with mock.patch.object(
+                    ctypes, "windll", mock_windll, create=True
+                ):
+                    assert uflash.find_microbit() == "B:\\"
 
 
-def test_find_microbit_unknown_os():
+def test_find_microbit_unknown_os() -> None:
     """
     Raises a NotImplementedError if the host OS is not supported.
     """
@@ -362,7 +370,7 @@ def test_find_microbit_unknown_os():
     assert ex.value.args[0] == 'OS "foo" not supported.'
 
 
-def test_save_hex():
+def test_save_hex() -> None:
     """
     Ensure the good case works.
     """
@@ -384,7 +392,7 @@ def test_save_hex():
         assert written_file.read() == hex_file
 
 
-def test_save_hex_no_hex():
+def test_save_hex_no_hex() -> None:
     """
     The function raises a ValueError if no hex content is provided.
     """
@@ -393,7 +401,7 @@ def test_save_hex_no_hex():
     assert ex.value.args[0] == "Cannot flash an empty .hex file."
 
 
-def test_save_hex_path_not_to_hex_file():
+def test_save_hex_path_not_to_hex_file() -> None:
     """
     The function raises a ValueError if the path is NOT to a .hex file.
     """
@@ -402,7 +410,7 @@ def test_save_hex_path_not_to_hex_file():
     assert ex.value.args[0] == "The path to flash must be for a .hex file."
 
 
-def test_flash_no_args():
+def test_flash_no_args() -> None:
     """
     The good case with no arguments to the flash() function. When it's
     possible to find a path to the micro:bit.
@@ -422,7 +430,7 @@ def test_flash_no_args():
             assert mock_save.call_args[0][1] == expected_path
 
 
-def test_flash_has_python_no_path_to_microbit():
+def test_flash_has_python_no_path_to_microbit() -> None:
     """
     The good case with a path to a Python file. When it's possible to find a
     path to the micro:bit.
@@ -446,7 +454,7 @@ def test_flash_has_python_no_path_to_microbit():
             assert mock_save.call_args[0][1] == expected_path
 
 
-def test_flash_with_path_to_multiple_microbits():
+def test_flash_with_path_to_multiple_microbits() -> None:
     """
     Flash the referenced paths to the micro:bit with a hex file generated from
     the MicroPython firmware and the referenced Python script.
@@ -472,7 +480,7 @@ def test_flash_with_path_to_multiple_microbits():
         assert mock_save.call_args_list[1][0][1] == expected_path
 
 
-def test_flash_with_path_to_microbit():
+def test_flash_with_path_to_microbit() -> None:
     """
     Flash the referenced path to the micro:bit with a hex file generated from
     the MicroPython firmware and the referenced Python script.
@@ -493,7 +501,7 @@ def test_flash_with_path_to_microbit():
         assert mock_save.call_args[0][1] == expected_path
 
 
-def test_flash_with_keepname():
+def test_flash_with_keepname() -> None:
     """
     Flash the referenced path to the micro:bit with a hex file generated from
     the MicroPython firmware and the referenced Python script and keep the
@@ -515,7 +523,7 @@ def test_flash_with_keepname():
         assert mock_save.call_args[0][1] == expected_path
 
 
-def test_flash_with_path_to_runtime():
+def test_flash_with_path_to_runtime() -> None:
     """
     Use the referenced runtime hex file when building the hex file to be
     flashed onto the device.
@@ -534,7 +542,7 @@ def test_flash_with_path_to_runtime():
                     mock_save.assert_called_once_with("foo", expected_hex_path)
 
 
-def test_main_keepname_message(capsys):
+def test_main_keepname_message(capsys: pytest.CaptureFixture[str]) -> None:
     """
     Ensure that the correct message appears when called as from py2hex.
     """
@@ -548,7 +556,7 @@ def test_main_keepname_message(capsys):
     assert (expected in stdout) or (expected in stderr)
 
 
-def test_flash_with_python_script():
+def test_flash_with_python_script() -> None:
     """
     If a byte representation of a Python script is passed into the function it
     should hexlify that.
@@ -566,7 +574,7 @@ def test_flash_with_python_script():
                 )
 
 
-def test_flash_cannot_find_microbit():
+def test_flash_cannot_find_microbit() -> None:
     """
     Ensure an IOError is raised if it is not possible to find the micro:bit.
     """
@@ -577,7 +585,7 @@ def test_flash_cannot_find_microbit():
     assert ex.value.args[0] == expected
 
 
-def test_main_no_args():
+def test_main_no_args() -> None:
     """
     If there are no args into the main function, it simply calls flash with
     no arguments.
@@ -598,7 +606,7 @@ def test_main_no_args():
             )
 
 
-def test_main_first_arg_python():
+def test_main_first_arg_python() -> None:
     """
     If there is a single argument that ends with ".py", it calls flash with
     it as the path to the source Python file.
@@ -613,7 +621,7 @@ def test_main_first_arg_python():
         )
 
 
-def test_main_first_arg_help(capsys):
+def test_main_first_arg_help(capsys: pytest.CaptureFixture[str]) -> None:
     """
     If there is a single argument of "--help", it prints some help and exits.
     """
@@ -627,7 +635,7 @@ def test_main_first_arg_help(capsys):
     assert expected in stdout
 
 
-def test_main_first_arg_version(capsys):
+def test_main_first_arg_version(capsys: pytest.CaptureFixture[str]) -> None:
     """
     If there is a single argument of "--version", it prints the version
     and exits.
@@ -636,13 +644,13 @@ def test_main_first_arg_version(capsys):
         uflash.main(argv=["--version"])
 
     stdout, stderr = capsys.readouterr()
-    expected = uflash._VERSION
+    expected = version("uflash")
     # On python 2 --version prints to stderr. On python 3 to stdout.
     # https://bugs.python.org/issue18920
     assert (expected in stdout) or (expected in stderr)
 
 
-def test_main_first_arg_not_python(capsys):
+def test_main_first_arg_not_python(capsys: pytest.CaptureFixture[str]) -> None:
     """
     If the first argument does not end in ".py" then it should display a useful
     error message.
@@ -655,7 +663,7 @@ def test_main_first_arg_not_python(capsys):
     assert expected in stderr
 
 
-def test_flash_raises(capsys):
+def test_flash_raises(capsys: pytest.CaptureFixture[str]) -> None:
     """
     If the flash system goes wrong, it should say that's what happened
     """
@@ -668,7 +676,7 @@ def test_flash_raises(capsys):
     assert expected in stderr
 
 
-def test_flash_raises_with_info(capsys):
+def test_flash_raises_with_info(capsys: pytest.CaptureFixture[str]) -> None:
     """
     When flash goes wrong it should mention everything you tell it
     """
@@ -697,7 +705,7 @@ def test_flash_raises_with_info(capsys):
     assert stderr == expected
 
 
-def test_watch_raises(capsys):
+def test_watch_raises(capsys: pytest.CaptureFixture[str]) -> None:
     """
     If the watch system goes wrong, it should say that's what happened
     """
@@ -710,7 +718,7 @@ def test_watch_raises(capsys):
     assert expected in stderr
 
 
-def test_extract_raises(capsys):
+def test_extract_raises(capsys: pytest.CaptureFixture[str]) -> None:
     """
     If the extract system goes wrong, it should say that's what happened
     """
@@ -723,7 +731,7 @@ def test_extract_raises(capsys):
     assert expected in stderr
 
 
-def test_main_two_args():
+def test_main_two_args() -> None:
     """
     If there are two arguments passed into main, then it should pass them onto
     the flash() function.
@@ -738,7 +746,7 @@ def test_main_two_args():
         )
 
 
-def test_main_runtime():
+def test_main_runtime() -> None:
     """
     If there are three arguments passed into main, then it should pass them
     onto the flash() function.
@@ -753,7 +761,7 @@ def test_main_runtime():
         )
 
 
-def test_main_named_args():
+def test_main_named_args() -> None:
     """
     Ensure that named arguments are passed on properly to the flash() function.
     """
@@ -767,7 +775,7 @@ def test_main_named_args():
         )
 
 
-def test_main_multiple_microbits():
+def test_main_multiple_microbits() -> None:
     """
     If there are more than two arguments passed into main, then it should pass
     them onto the flash() function.
@@ -793,7 +801,7 @@ def test_main_multiple_microbits():
         )
 
 
-def test_main_watch_flag():
+def test_main_watch_flag() -> None:
     """
     The watch flag cause a call the correct function.
     """
@@ -808,7 +816,7 @@ def test_main_watch_flag():
         )
 
 
-def test_extract_command():
+def test_extract_command() -> None:
     """
     Test the command-line script extract feature
     """
@@ -817,7 +825,7 @@ def test_extract_command():
         mock_extract.assert_called_once_with("hex.hex", ["foo.py"])
 
 
-def test_extract_paths():
+def test_extract_paths() -> None:
     """
     Test the different paths of the extract() function.
     It should open and extract the contents of the file (input arg)
@@ -843,7 +851,7 @@ def test_extract_paths():
         assert mock_open.return_value.write.call_count == 1
 
 
-def test_extract_command_source_only():
+def test_extract_command_source_only() -> None:
     """
     If there is no target file the extract command should write to stdout.
     """
@@ -860,25 +868,27 @@ def test_extract_command_source_only():
         mock_print.assert_any_call(b'print("hello, world!")')
 
 
-def test_extract_command_no_source():
+def test_extract_command_no_source() -> None:
     """
     If there is no source file the extract command should complain
     """
     with pytest.raises(TypeError):
-        uflash.extract(None, None)
+        uflash.extract(None, None)  # type: ignore
 
 
-def test_watch_no_source():
+def test_watch_no_source() -> None:
     """
     If there is no source file the watch command should complain.
     """
     with pytest.raises(ValueError):
-        uflash.watch_file(None, lambda: "should never be called!")
+        uflash.watch_file(None, lambda: "should never be called!")  # type: ignore
 
 
 @mock.patch("uflash.time")
 @mock.patch("uflash.os")
-def test_watch_file(mock_os, mock_time):
+def test_watch_file(
+    mock_os: mock.MagicMock, mock_time: mock.MagicMock
+) -> None:
     """
     Make sure that the callback is called each time the file changes.
     """
@@ -908,7 +918,7 @@ def test_watch_file(mock_os, mock_time):
     assert call_count[0] == 2
 
 
-def test_py2hex_one_arg():
+def test_py2hex_one_arg() -> None:
     """
     Test a simple call to main().
     """
@@ -922,7 +932,7 @@ def test_py2hex_one_arg():
         )
 
 
-def test_py2hex_runtime_arg():
+def test_py2hex_runtime_arg() -> None:
     """
     Test a simple call to main().
     """
@@ -936,7 +946,7 @@ def test_py2hex_runtime_arg():
         )
 
 
-def test_py2hex_outdir_arg():
+def test_py2hex_outdir_arg() -> None:
     """
     Test a simple call to main().
     """
@@ -950,7 +960,7 @@ def test_py2hex_outdir_arg():
         )
 
 
-def test_bytes_to_ihex():
+def test_bytes_to_ihex() -> None:
     """
     Test bytes_to_ihex golden path for V1.
     """
@@ -966,7 +976,7 @@ def test_bytes_to_ihex():
     assert result == expected_result
 
 
-def test_bytes_to_ihex_universal():
+def test_bytes_to_ihex_universal() -> None:
     """
     Test bytes_to_ihex golden path for V2.
     """
@@ -982,7 +992,7 @@ def test_bytes_to_ihex_universal():
     assert result == expected_result
 
 
-def test_bytes_to_ihex_inner_extended_linear_address_record():
+def test_bytes_to_ihex_inner_extended_linear_address_record() -> None:
     """
     Test bytes_to_ihex golden path for V2.
     """
@@ -999,7 +1009,7 @@ def test_bytes_to_ihex_inner_extended_linear_address_record():
     assert result == expected_result
 
 
-def test_script_to_fs():
+def test_script_to_fs() -> None:
     """
     Test script_to_fs with a random example without anything special about it.
     """
@@ -1038,12 +1048,12 @@ def test_script_to_fs():
         mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
-        result = uflash.script_to_fs(script, uflash._MICROBIT_ID_V1)
+        result = uflash.script_to_fs(script, uflash.MICROBIT_ID_V1)
 
     assert result == expected_result, script
 
 
-def test_script_to_fs_short():
+def test_script_to_fs_short() -> None:
     """
     Test script_to_fs with a script smaller than a fs chunk.
     """
@@ -1066,12 +1076,12 @@ def test_script_to_fs_short():
         mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
-        result = uflash.script_to_fs(script, uflash._MICROBIT_ID_V1)
+        result = uflash.script_to_fs(script, uflash.MICROBIT_ID_V1)
 
     assert result == expected_result, script
 
 
-def test_script_to_fs_two_chunks():
+def test_script_to_fs_two_chunks() -> None:
     """
     Test script_to_fs with a script that takes two chunks for V1 and V2.
     """
@@ -1082,14 +1092,14 @@ def test_script_to_fs_two_chunks():
         mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
-        result_v1 = uflash.script_to_fs(TEST_SCRIPT_FS, uflash._MICROBIT_ID_V1)
-        result_v2 = uflash.script_to_fs(TEST_SCRIPT_FS, uflash._MICROBIT_ID_V2)
+        result_v1 = uflash.script_to_fs(TEST_SCRIPT_FS, uflash.MICROBIT_ID_V1)
+        result_v2 = uflash.script_to_fs(TEST_SCRIPT_FS, uflash.MICROBIT_ID_V2)
 
     assert result_v1 == expected_result_v1
     assert result_v2 == expected_result_v2
 
 
-def test_script_to_fs_chunk_boundary():
+def test_script_to_fs_chunk_boundary() -> None:
     """
     Test script_to_fs edge case with the taking exactly one chunk.
     """
@@ -1165,43 +1175,37 @@ def test_script_to_fs_chunk_boundary():
         mock.patch("uflash._FS_START_ADDR_V1", 0x38C00),
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
-        result_short = uflash.script_to_fs(
-            script_short, uflash._MICROBIT_ID_V1
-        )
-        result_exact = uflash.script_to_fs(
-            script_exact, uflash._MICROBIT_ID_V1
-        )
-        result_large = uflash.script_to_fs(
-            script_large, uflash._MICROBIT_ID_V1
-        )
+        result_short = uflash.script_to_fs(script_short, uflash.MICROBIT_ID_V1)
+        result_exact = uflash.script_to_fs(script_exact, uflash.MICROBIT_ID_V1)
+        result_large = uflash.script_to_fs(script_large, uflash.MICROBIT_ID_V1)
 
     assert result_short == expected_result_short, script_short
     assert result_exact == expected_result_exact, script_exact
     assert result_large == expected_result_large, script_large
 
 
-def test_script_to_fs_script_too_long():
+def test_script_to_fs_script_too_long() -> None:
     """
     Test script_to_fs when the script is too long and won't fit.
     """
     script = (b"shouldfit" * 3023)[:-1]
-    _ = uflash.script_to_fs(script, uflash._MICROBIT_ID_V1)
+    _ = uflash.script_to_fs(script, uflash.MICROBIT_ID_V1)
 
     script += b"1"
     with pytest.raises(ValueError) as ex:
-        _ = uflash.script_to_fs(script, uflash._MICROBIT_ID_V1)
+        _ = uflash.script_to_fs(script, uflash.MICROBIT_ID_V1)
     assert "Python script must be less than" in ex.value.args[0]
 
 
-def test_script_to_fs_empty_code():
+def test_script_to_fs_empty_code() -> None:
     """
     Test script_to_fs results an empty string if the input code is empty.
     """
-    result = uflash.script_to_fs("", uflash._MICROBIT_ID_V1)
+    result = uflash.script_to_fs(b"", uflash.MICROBIT_ID_V1)
     assert result == ""
 
 
-def test_script_to_fs_line_endings():
+def test_script_to_fs_line_endings() -> None:
     """
     Test script_to_fs converts line endings before embedding script.
     """
@@ -1214,17 +1218,15 @@ def test_script_to_fs_line_endings():
         mock.patch("uflash._FS_END_ADDR_V1", 0x3F800),
     ):
         result_win = uflash.script_to_fs(
-            script_win_lines, uflash._MICROBIT_ID_V1
+            script_win_lines, uflash.MICROBIT_ID_V1
         )
-        result_cr = uflash.script_to_fs(
-            script_cr_lines, uflash._MICROBIT_ID_V1
-        )
+        result_cr = uflash.script_to_fs(script_cr_lines, uflash.MICROBIT_ID_V1)
 
     assert result_win == expected_result
     assert result_cr == expected_result
 
 
-def test_script_to_fs_unknown_microbit_id():
+def test_script_to_fs_unknown_microbit_id() -> None:
     """
     Test script_to_fs when the micro:bit ID is not recognised.
     """
@@ -1234,7 +1236,7 @@ def test_script_to_fs_unknown_microbit_id():
     assert "Incompatible micro:bit ID found: 1234" in ex.value.args[0]
 
 
-def test_embed_fs_uhex():
+def test_embed_fs_uhex() -> None:
     """
     Test embed_fs_uhex to add the filesystem into a Universal Hex with standard
     two sections, one for V1 and one for V2.
@@ -1265,7 +1267,7 @@ def test_embed_fs_uhex():
     assert uhex_alignment == (len(uhex_with_fs) % 512)
 
 
-def test_pad_hex_records():
+def test_pad_hex_records() -> None:
     """
     Test the function pads a generic fs hex block to 512 byte alignment.
     """
@@ -1281,7 +1283,7 @@ def test_pad_hex_records():
     assert len(padded_v2) % 512 == 0
 
 
-def test_pad_hex_records_no_padding_needed():
+def test_pad_hex_records_no_padding_needed() -> None:
     """
     Test the function doesn't pad is the string is already memory aligned.
     """
@@ -1301,7 +1303,7 @@ def test_pad_hex_records_no_padding_needed():
     assert padded_v2 == padded_v2
 
 
-def test_embed_fs_uhex_extra_uicr_jump_record():
+def test_embed_fs_uhex_extra_uicr_jump_record() -> None:
     uhex_list = [
         # Section for V1 starts
         ":020000040000FA",
@@ -1382,9 +1384,9 @@ def test_embed_fs_uhex_extra_uicr_jump_record():
     assert uhex_esa_record_alignment == (len(uhex_esa_with_fs) % 512)
 
 
-def test_embed_fs_uhex_empty_code():
+def test_embed_fs_uhex_empty_code() -> None:
     uhex = "\n".join(TEST_UNIVERSAL_HEX_LIST)
 
-    identical_uhex = uflash.embed_fs_uhex(uhex, "")
+    identical_uhex = uflash.embed_fs_uhex(uhex, b"")
 
     assert identical_uhex == uhex

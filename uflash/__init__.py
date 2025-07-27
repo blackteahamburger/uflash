@@ -19,8 +19,10 @@ import os
 import struct
 import sys
 import time
+from collections.abc import Callable
 from importlib.resources import files as importlib_files
 from subprocess import check_output
+from typing import Any
 
 import nudatus
 
@@ -54,32 +56,32 @@ MICROPYTHON_V2_VERSION = "2.1.2"
 _SCRIPT_ADDR = 0x3E000
 
 #: Filesystem boundaries, this might change with different MicroPython builds.
-_MICROBIT_ID_V1 = "9900"
+MICROBIT_ID_V1 = "9900"
 _FS_START_ADDR_V1 = 0x38C00
 # UICR value 0x40000 - 0x400 (scratch page) - 0x400 (mag page) = 0x3F800
 _FS_END_ADDR_V1 = 0x3F800
 
-_MICROBIT_ID_V2 = "9903"
+MICROBIT_ID_V2 = "9903"
 _FS_START_ADDR_V2 = 0x6D000
 # Flash region value 0x73000 - 0x1000 (scratch page) = 0x72000
 _FS_END_ADDR_V2 = 0x72000
 
-_MAX_SIZE = min(
+MAX_SIZE = min(
     _FS_END_ADDR_V2 - _FS_START_ADDR_V2, _FS_END_ADDR_V1 - _FS_START_ADDR_V1
 )
 
 
-def minify(script):
+def minify(script: bytes) -> bytes:
     """
     Minify the script.
     """
     script = nudatus.mangle(script.decode("utf-8")).encode("utf-8")
-    if len(script) >= _MAX_SIZE:
+    if len(script) >= MAX_SIZE:
         raise ValueError("Python Script is still too long after minification")
     return script
 
 
-def script_to_fs(script, microbit_version_id):
+def script_to_fs(script: bytes, microbit_version_id: str) -> str:
     """
     Convert a Python script (in bytes format) into Intel Hex records, which
     location is configured within the micro:bit MicroPython filesystem and the
@@ -95,11 +97,11 @@ def script_to_fs(script, microbit_version_id):
     script = script.replace(b"\r", b"\n")
 
     # Find fs boundaries based on micro:bit version ID
-    if microbit_version_id == _MICROBIT_ID_V1:
+    if microbit_version_id == MICROBIT_ID_V1:
         fs_start_address = _FS_START_ADDR_V1
         fs_end_address = _FS_END_ADDR_V1
         universal_data_record = False
-    elif microbit_version_id == _MICROBIT_ID_V2:
+    elif microbit_version_id == MICROBIT_ID_V2:
         fs_start_address = _FS_START_ADDR_V2
         fs_end_address = _FS_END_ADDR_V2
         universal_data_record = True
@@ -129,9 +131,9 @@ def script_to_fs(script, microbit_version_id):
     # Followed by the UFT-8 encoded file data until end of chunk data
     header = b"\xfe\xff\x07\x6d\x61\x69\x6e\x2e\x70\x79"
     first_chunk_data_size = chunk_size - len(header) - 1
-    chunks = []
+    chunks: list[bytearray] = []
 
-    # Star generating filesystem chunks
+    # Start generating filesystem chunks
     chunk = header + script[:first_chunk_data_size]
     script = script[first_chunk_data_size:]
     chunks.append(bytearray(chunk + (b"\xff" * (chunk_size - len(chunk)))))
@@ -170,7 +172,7 @@ def script_to_fs(script, microbit_version_id):
     return fs_ihex + "\n" + scratch_ihex + "\n"
 
 
-def pad_hex_string(hex_records_str, alignment=512):
+def pad_hex_string(hex_records_str: str, alignment: int = 512) -> str:
     """
     Adds padding records to a string of Intel Hex records to align the total
     size to the provided alignment value.
@@ -214,7 +216,9 @@ def pad_hex_string(hex_records_str, alignment=512):
     return hex_records_str
 
 
-def embed_fs_uhex(universal_hex_str, python_code=None):
+def embed_fs_uhex(
+    universal_hex_str: str, python_code: bytes | None = None
+) -> str:
     """
     Given a string representing a MicroPython Universal Hex, it will embed a
     Python script encoded into the MicroPython filesystem for each of the
@@ -282,7 +286,9 @@ def embed_fs_uhex(universal_hex_str, python_code=None):
     return full_uhex_with_fs
 
 
-def bytes_to_ihex(addr, data, universal_data_record=False):
+def bytes_to_ihex(
+    addr: int, data: bytes, universal_data_record: bool = False
+) -> str:
     """
     Converts a byte array (of type bytes) into string of Intel Hex records from
     a given address.
@@ -299,7 +305,7 @@ def bytes_to_ihex(addr, data, universal_data_record=False):
     record type.
     """
 
-    def make_record(data):
+    def make_record(data: bytes) -> str:
         checksump = (-(sum(bytearray(data)))) & 0xFF
         return ":%s%02X" % (
             str(binascii.hexlify(data), "utf-8").upper(),
@@ -328,12 +334,12 @@ def bytes_to_ihex(addr, data, universal_data_record=False):
     return "\n".join(output)
 
 
-def unhexlify(blob):
+def unhexlify(blob: str) -> str:
     """
     Takes a hexlified script and turns it back into a string of Python code.
     """
     lines = blob.split("\n")[1:]
-    output = []
+    output: list[bytes] = []
     for line in lines:
         # Discard the address, length etc. and reverse the hexlification
         output.append(binascii.unhexlify(line[9:-2]))
@@ -355,7 +361,7 @@ def unhexlify(blob):
         return ""
 
 
-def extract_script(embedded_hex):
+def extract_script(embedded_hex: str) -> str:
     """
     Given a hex file containing the MicroPython runtime and an embedded Python
     script, will extract the original Python script.
@@ -463,7 +469,7 @@ def find_microbit():
         raise NotImplementedError('OS "{}" not supported.'.format(os.name))
 
 
-def save_hex(hex_file, path):
+def save_hex(hex_file: str, path: str) -> None:
     """
     Given a string representation of a hex file, this function copies it to
     the specified path thus causing the device mounted at that point to be
@@ -485,12 +491,12 @@ def save_hex(hex_file, path):
 
 
 def flash(
-    path_to_python=None,
-    paths_to_microbits=None,
-    path_to_runtime=None,
-    python_script=None,
-    keepname=False,
-):
+    path_to_python: str | None = None,
+    paths_to_microbits: list[str] | None = None,
+    path_to_runtime: str | None = None,
+    python_script: bytes | None = None,
+    keepname: bool = False,
+) -> None:
     """
     Given a path to or source of a Python file will attempt to create a hex
     file and then flash it onto the referenced BBC micro:bit.
@@ -517,9 +523,10 @@ def flash(
     If the automatic discovery fails, then it will raise an IOError.
     """
     # Grab the Python script (if needed).
+    script_name_root = script_name = ""
     if path_to_python:
-        (script_path, script_name) = os.path.split(path_to_python)
-        (script_name_root, script_name_ext) = os.path.splitext(script_name)
+        (_script_path, script_name) = os.path.split(path_to_python)
+        (script_name_root, _script_name_ext) = os.path.splitext(script_name)
         if not path_to_python.endswith(".py"):
             raise ValueError('Python files must end in ".py".')
         with open(path_to_python, "rb") as python_file:
@@ -559,7 +566,7 @@ def flash(
         raise IOError("Unable to find micro:bit. Is it plugged in?")
 
 
-def extract(path_to_hex, output_path=None):
+def extract(path_to_hex: str, output_path: str | None = None) -> None:
     """
     Given a path_to_hex file this function will attempt to extract the
     embedded script from it and save it either to output_path or stdout
@@ -573,7 +580,9 @@ def extract(path_to_hex, output_path=None):
             print(python_script)
 
 
-def watch_file(path, func, *args, **kwargs):
+def watch_file(
+    path: str, func: Callable[..., Any], *args: Any, **kwargs: Any
+) -> None:
     """
     Watch a file for changes by polling its last modification time. Call the
     provided function with *args and **kwargs upon modification.
@@ -594,7 +603,7 @@ def watch_file(path, func, *args, **kwargs):
         pass
 
 
-def py2hex(argv=None):
+def py2hex(argv: list[str] | None = None) -> None:
     """
     Entry point for the command line tool 'py2hex'
 
@@ -628,7 +637,7 @@ def py2hex(argv=None):
 
     for py_file in args.source:
         if not args.outdir:
-            (script_path, script_name) = os.path.split(py_file)
+            (script_path, _script_name) = os.path.split(py_file)
             args.outdir = script_path
         flash(
             path_to_python=py_file,
@@ -638,7 +647,7 @@ def py2hex(argv=None):
         )  # keepname is always True in py2hex
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> None:
     """
     Entry point for the command line tool 'uflash'.
     Will print help text if the optional first argument is "help". Otherwise
