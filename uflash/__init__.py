@@ -22,12 +22,12 @@ import time
 from collections.abc import Callable
 from importlib.resources import files as importlib_files
 from subprocess import check_output
-from typing import Any
+from typing import Any, Final
 
 import nudatus
 
-#: The help text to be shown by uflash  when requested.
-_HELP_TEXT = """
+#: The help text to be shown by uflash when requested.
+_HELP_TEXT: Final = """
 Flash Python onto the BBC micro:bit or extract Python from a .hex file.
 
 If no path to the micro:bit is provided uflash will attempt to autodetect the
@@ -39,34 +39,34 @@ version of the MicroPython runtime.
 Documentation is here: https://uflash.readthedocs.io/en/latest/
 """
 
-_PY2HEX_HELP_TEXT = """
+_PY2HEX_HELP_TEXT: Final = """
 A simple utility script intended for creating hexified versions of MicroPython
 scripts on the local filesystem _NOT_ the microbit.  Does not autodetect a
 microbit.  Accepts multiple input scripts and optionally one output directory.
 """
 
 #: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION of uflash
-_VERSION = "2.1.0"
+_VERSION: Final = "2.1.0"
 
 #: The version number reported by the bundled MicroPython in os.uname().
-MICROPYTHON_V1_VERSION = "1.1.1"
-MICROPYTHON_V2_VERSION = "2.1.2"
+MICROPYTHON_V1_VERSION: Final = "1.1.1"
+MICROPYTHON_V2_VERSION: Final = "2.1.2"
 
 #: The magic start address in flash memory to extract script.
-_SCRIPT_ADDR = 0x3E000
+_SCRIPT_ADDR: Final = 0x3E000
 
 #: Filesystem boundaries, this might change with different MicroPython builds.
-MICROBIT_ID_V1 = "9900"
-_FS_START_ADDR_V1 = 0x38C00
+MICROBIT_ID_V1: Final = "9900"
+_FS_START_ADDR_V1: Final = 0x38C00
 # UICR value 0x40000 - 0x400 (scratch page) - 0x400 (mag page) = 0x3F800
-_FS_END_ADDR_V1 = 0x3F800
+_FS_END_ADDR_V1: Final = 0x3F800
 
-MICROBIT_ID_V2 = "9903"
-_FS_START_ADDR_V2 = 0x6D000
+MICROBIT_ID_V2: Final = "9903"
+_FS_START_ADDR_V2: Final = 0x6D000
 # Flash region value 0x73000 - 0x1000 (scratch page) = 0x72000
-_FS_END_ADDR_V2 = 0x72000
+_FS_END_ADDR_V2: Final = 0x72000
 
-MAX_SIZE = min(
+MAX_SIZE: Final[int] = min(
     _FS_END_ADDR_V2 - _FS_START_ADDR_V2, _FS_END_ADDR_V1 - _FS_START_ADDR_V1
 )
 

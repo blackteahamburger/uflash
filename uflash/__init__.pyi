@@ -1,12 +1,11 @@
-from _typeshed import Incomplete
 from collections.abc import Callable as Callable
-from typing import Any
+from typing import Any, Final
 
-MICROPYTHON_V1_VERSION: str
-MICROPYTHON_V2_VERSION: str
-MICROBIT_ID_V1: str
-MICROBIT_ID_V2: str
-MAX_SIZE: Incomplete
+MICROPYTHON_V1_VERSION: Final[str]
+MICROPYTHON_V2_VERSION: Final[str]
+MICROBIT_ID_V1: Final[str]
+MICROBIT_ID_V2: Final[str]
+MAX_SIZE: Final[int]
 
 def minify(script: bytes) -> bytes: ...
 def script_to_fs(script: bytes, microbit_version_id: str) -> str: ...
