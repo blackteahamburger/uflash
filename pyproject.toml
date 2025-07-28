@@ -56,3 +56,7 @@ unsafe-fixes = true
 target-version = "py313"
 line-length = 79
 builtins = ["_"]
+
+
+[tool.ruff.format]
+exclude = ["*.pyi"]

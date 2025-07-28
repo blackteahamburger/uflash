@@ -400,7 +400,7 @@ def extract_script(embedded_hex: str) -> str:
     return ""
 
 
-def find_microbit():
+def find_microbit() -> str | None:
     """
     Returns a path on the filesystem that represents the plugged in BBC
     micro:bit that is to be flashed. If no micro:bit is found, it returns
