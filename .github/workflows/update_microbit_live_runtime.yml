@@ -13,7 +13,7 @@ jobs:
         with:
           repository: microbit-foundation/micropython-microbit-v2
           submodules: true
-      - uses: sgoudham/update-git-submodules@latest
+      - uses: sgoudham/update-git-submodules@v2.1.3
         with:
           strategy: "tag"
       - uses: actions/setup-python@v5
