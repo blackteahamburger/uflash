@@ -1,7 +1,7 @@
 uFlash
 ======
 
-A community fork of uflash. PR welcome!
+A community fork of `uFlash <https://github.com/ntoll/uflash>`_.
 
 A utility for flashing the BBC micro:bit with Python scripts and the
 MicroPython runtime. You pronounce the name of this utility "micro-flash". ;-)

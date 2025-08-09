@@ -1,7 +1,7 @@
 Release History
 ===============
 
-2.1.0
+3.0.0
 -----
 
 * Updated to the latest version of MicroPython for micro:bit (1.1.1, 2.1.2).

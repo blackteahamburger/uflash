@@ -1,0 +1,43 @@
+name: Update live micro:bit MicroPython runtime
+
+on:
+  schedule:
+    - cron: "30 23 28 * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: microbit-foundation/micropython-microbit-v2
+          submodules: true
+      - uses: sgoudham/update-git-submodules@latest
+        with:
+          strategy: "tag"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: carlosperate/arm-none-eabi-gcc-action@v1
+      - name: Build mpy-cross
+        run: make -C lib/micropython/mpy-cross -j2
+      - name: Build MicroPython
+        run: CMAKE_POLICY_VERSION_MINIMUM=3.5 make -C src -j2
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: mainrepo
+      - name: Move hex file
+        run: |
+          mv src/MICROBIT.hex $GITHUB_WORKSPACE/mainrepo/uflash/micropython-microbit-v2-live.hex
+      - name: Write RT_LIVE_VERINFO
+        run: |
+          echo "tag: $(git describe --tags --abbrev=0)" > $GITHUB_WORKSPACE/mainrepo/uflash/RT_LIVE_VERINFO
+          echo "commit: $(git rev-parse HEAD)" >> $GITHUB_WORKSPACE/mainrepo/uflash/RT_LIVE_VERINFO
+          echo "MicroPython: $(cd lib/micropython && git describe --tags --abbrev=0)" >> $GITHUB_WORKSPACE/mainrepo/uflash/RT_LIVE_VERINFO
+          echo "Codal: $(cd lib/codal && git describe --tags --abbrev=0)" >> $GITHUB_WORKSPACE/mainrepo/uflash/RT_LIVE_VERINFO
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: Update live MicroPython hex and version info"

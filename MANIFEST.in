@@ -1,4 +1,5 @@
-include uflash/firmware.hex
+include uflash/*.hex
+include uflash/RT_LIVE_VERINFO
 include CHANGES.rst
 include README.rst
 include LICENSE
