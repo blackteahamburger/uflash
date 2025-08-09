@@ -43,3 +43,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: Update live MicroPython hex and version info"
+          repository: ${{ github.workspace }}/mainrepo
