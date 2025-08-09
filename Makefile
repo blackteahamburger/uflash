@@ -7,6 +7,10 @@ help:
 	@echo "make format_check - run the Ruff formatter to check for formatting issues."
 	@echo "make format - run the Ruff formatter."
 	@echo "make check - run all the checkers and tests."
+	@echo "make stubgen - generate type stubs for the project."
+	@echo "make dist - make a dist/wheel for the project."
+	@echo "make publish-test - publish the project to PyPI test instance."
+	@echo "make publish-live - publish the project to PyPI production."
 	@echo "make docs - run sphinx to create project documentation.\n"
 
 clean:
@@ -41,6 +45,18 @@ format_check:
 	ruff format --check
 
 check: clean ruff format_check coverage
+
+stubgen:
+	stubgen -p uflash -o .
+
+dist: check
+	python -m build
+
+publish-test: dist
+	twine upload --repository testpypi dist/*
+
+publish-live: dist
+	twine upload dist/*
 
 docs: clean
 	$(MAKE) -C docs html

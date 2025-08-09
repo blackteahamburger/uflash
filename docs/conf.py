@@ -50,8 +50,8 @@ master_doc = "index"
 
 # General information about the project.
 project = "uFlash"
-copyright = "2015, Nicholas H.Tollervey"
-author = "Nicholas H.Tollervey"
+copyright = "2025, Blackteahamburger"
+author = "Blackteahamburger"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -226,7 +226,7 @@ latex_documents = [
         master_doc,
         "uFlash.tex",
         "uFlash Documentation",
-        "Nicholas H.Tollervey",
+        "Blackteahamburger",
         "manual",
     ),
 ]

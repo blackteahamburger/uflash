@@ -10,7 +10,7 @@
 API
 ===
 
-.. automodule:: uflash
+.. automodule:: uflash.lib
     :members:
 
 .. include:: ../CHANGES.rst

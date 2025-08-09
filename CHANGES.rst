@@ -1,17 +1,18 @@
 Release History
 ===============
 
-2.1.0
+3.0.0
 -----
 
+* The `flash` function is rewritten, see the docstring for more information.
 * Updated to the latest version of MicroPython for micro:bit (1.1.1, 2.1.2).
-* Some flags dropped before are reintroduced:
-
-  * --runtime to specify a custom MicroPython runtime.
-  * --extract to extract a Python script from a hex file.
-
-* The script is minified by nudatus before flashing (original --minify by default).
+* --runtime is reintroduced to specify a custom MicroPython runtime.
+* The script is always minified by nudatus before flashing (original --minify).
+* The `uextract` command is introduced to extract Python scripts
+  from a hex file.
 * The module is changed to be a package.
+* ... And many more,
+  see function docstrings and command line help for more details.
 
 2.0.0
 -----
@@ -59,16 +60,23 @@ Release History
 1.1.0
 -----
 
-* Update to latest version of MicroPython for the BBC micro:bit (many thanks to Damien George for his amazing efforts!).
-* Add a --version flag to uflash that causes it to print the current version number (many thanks to Lenz Grimmer for this work).
-* Allow uflash to accept the content of a script as well as the path to a script (many thanks to Zander Brown for this work).
-* Ensure uflash works nicely / better with external tools (many thanks to Lex Robinson for this work).
+* Update to latest version of MicroPython for the BBC micro:bit
+  (many thanks to Damien George for his amazing efforts!).
+* Add a --version flag to uflash that
+  causes it to print the current version number
+  (many thanks to Lenz Grimmer for this work).
+* Allow uflash to accept the content of a script
+  as well as the path to a script
+  (many thanks to Zander Brown for this work).
+* Ensure uflash works nicely / better with external tools
+  (many thanks to Lex Robinson for this work).
 * Added copyright and license information to the start of the script.
 
 1.0.8
 -----
 
-* Refactor hex extraction to not depend on extended address record before script (thanks Carlos).
+* Refactor hex extraction to not depend on extended address record before
+  script (thanks Carlos).
 * Refactor tox tests to fix Windows related Gremlin (thanks again, Carlos).
 
 1.0.7
@@ -80,7 +88,8 @@ Release History
 -----
 
 * Update runtime to include latest bug fixes and inclusion of input() builtin.
-* Detecting drives on Windows 10 no longer causes pop-ups in certain situations.
+* Detecting drives on Windows 10 no longer causes pop-ups in certain
+  situations.
 * Documentation updates.
 
 1.0.4

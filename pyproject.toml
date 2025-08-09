@@ -1,62 +1,46 @@
 [build-system]
-requires = ["setuptools>=77.0.3"]
-build-backend = "setuptools.build_meta"
+    build-backend = "setuptools.build_meta"
+    requires      = ["setuptools>=77.0.3"]
 
 [project]
-name = "uflash"
-dynamic = ["version"]
-description = "A module and utility to flash Python onto the BBC micro:bit."
-readme = "README.rst"
-license = "MIT"
-license-files = ["LICENSE", "AUTHORS"]
-authors = [
-    { name = "Blackteahamburger", email = "blackteahamburger@outlook.com" },
-    { name = "Nicholas H.Tollervey", email = "ntoll@ntoll.org" },
-    { name = "Matt Wheeler", email = "m@funkyhat.org" },
-    { name = "Tom Viner", email = "uflash@viner.tv" },
-    { name = "Tom Gurion", email = "nagasaki45@gmail.com" },
-    { name = "Scott Webster", email = "ScottDWebsterNJ@gmail.com" },
-]
-maintainers = [
-    { name = "Blackteahamburger", email = "blackteahamburger@outlook.com" },
-]
-requires-python = ">=3.10"
-dependencies = ["nudatus>=0.0.2"]
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Education",
-    "Operating System :: POSIX",
-    "Operating System :: Microsoft :: Windows",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Education",
-    "Topic :: Software Development :: Embedded Systems",
-]
+    authors = [
+        { name = "Blackteahamburger", email = "blackteahamburger@outlook.com" },
+    ]
+    classifiers = [
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Education",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Topic :: Education",
+        "Topic :: Software Development :: Embedded Systems",
+    ]
+    dependencies = ["microfs2>=2.0.6", "nudatus>=0.0.2", "semver"]
+    description = "A module and utility to flash Python onto the BBC micro:bit."
+    license = "MIT"
+    license-files = ["AUTHORS", "LICENSE"]
+    maintainers = [
+        { name = "Blackteahamburger", email = "blackteahamburger@outlook.com" },
+    ]
+    name = "uflash3"
+    readme = "README.rst"
+    requires-python = ">=3.10"
+    version = "3.0.0"
 
-[project.optional-dependencies]
-dev = ["pytest>=5", "pytest-cov", "coverage", "sphinx", "ruff"]
+    [project.optional-dependencies]
+        dev = ["coverage", "pytest-cov", "pytest>=5", "ruff", "sphinx"]
 
-[project.urls]
-Homepage = "https://github.com/blackteahamburger/uflash"
+    [project.urls]
+        Homepage = "https://github.com/blackteahamburger/uflash"
 
-[project.scripts]
-uflash = "uflash:main"
-py2hex = "uflash:py2hex"
+    [project.scripts]
+        uextract = "uflash.uextract:uextract"
+        uflash   = "uflash.main:main"
 
-[tool.setuptools.dynamic]
-version = { attr = "uflash._VERSION" }
-
-[tool.ruff]
-preview = true
-unsafe-fixes = true
-target-version = "py313"
-line-length = 79
-builtins = ["_"]
-
-
-[tool.ruff.format]
-exclude = ["*.pyi"]
+[tool.coverage.run]
+    omit = ["uflash/__main__.py"]
