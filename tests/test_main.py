@@ -2,16 +2,20 @@
 #
 # See the LICENSE file for more information.
 
-# pyright: reportPrivateUsage=false
+# pyright: reportUnknownVariableType=false
+# pyright: reportUnknownMemberType=false
+# pyright: reportAttributeAccessIssue=false
 """Test module for uflash.main module."""
 
 import argparse
 import pathlib
 import sys
 import types
+from tokenize import TokenError
 from unittest import mock
 
 import pytest
+from serial import SerialException, SerialTimeoutException
 
 from uflash import main
 
@@ -105,9 +109,9 @@ def test_main_exceptions() -> None:
     """Test main() handling of all expected exceptions."""
     exceptions: list[BaseException] = [
         main.MicroBitNotFoundError("x"),
-        main.SerialTimeoutException("x"),
-        main.SerialException("x"),
-        main.TokenError("x"),
+        SerialTimeoutException("x"),
+        SerialException("x"),
+        TokenError("x"),
         FileNotFoundError("x"),
         main.ScriptTooLongError("x"),
         RuntimeError("x"),

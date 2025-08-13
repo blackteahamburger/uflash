@@ -9,9 +9,11 @@ import contextlib
 import pathlib
 import tempfile
 import types
+from tokenize import TokenError
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
+import microfs
 import pytest
 
 from uflash import lib
@@ -35,7 +37,7 @@ def test_script_to_fs_success_and_errors() -> None:
             "uflash.lib.nudatus.mangle",
             side_effect=UnicodeDecodeError("utf-8", b"x=1\n", 0, 1, "bad"),
         ),
-        pytest.raises(lib.TokenError),
+        pytest.raises(TokenError),
     ):
         lib.script_to_fs(b"x=1\n", lib.MicrobitID.V1, True)
     fs_size = int(lib.FSEndAddr.V1) - int(lib.FSStartAddr.V1)
@@ -262,13 +264,13 @@ def testget_board_info_branches() -> None:
         assert isinstance(r2, tuple)
     with patch(
         "uflash.lib.microfs.MicroBitSerial.get_serial",
-        side_effect=lib.microfs.MicroBitNotFoundError,
+        side_effect=microfs.MicroBitNotFoundError,
     ):
         r3 = lib.get_board_info(None, None, None, 1, False)
         assert r3[0] is True
     with patch(
         "uflash.lib.microfs.MicroBitSerial.get_serial",
-        side_effect=lib.microfs.MicroBitIOError,
+        side_effect=microfs.MicroBitIOError,
     ):
         r4 = lib.get_board_info(None, None, None, 1, False)
         assert r4[0] is True
@@ -307,9 +309,7 @@ def test_flash_main_branches() -> None:
     with (
         patch("uflash.lib.resolve_microbit_path", return_value=p),
         patch("uflash.lib.get_board_info", return_value=(False, None, serial)),
-        patch(
-            "uflash.lib.microfs.put", side_effect=lib.microfs.MicroBitIOError
-        ),
+        patch("uflash.lib.microfs.put", side_effect=microfs.MicroBitIOError),
         patch("uflash.lib.embed_and_save_micropython_hex") as em2,
     ):
         lib.flash(path_to_python=pathlib.Path("m.py"), old=False)
@@ -529,9 +529,7 @@ def test_flash_put_ioerror_triggers_fallback() -> None:
         patch("uflash.lib.resolve_microbit_path", return_value=pathlib.Path()),
         patch("uflash.lib.get_board_info", return_value=(True, None, serial)),
         patch("uflash.lib.embed_and_save_micropython_hex"),
-        patch(
-            "uflash.lib.microfs.put", side_effect=lib.microfs.MicroBitIOError
-        ),
+        patch("uflash.lib.microfs.put", side_effect=microfs.MicroBitIOError),
         patch("uflash.lib.logger.warning"),
     ):
         lib.flash(path_to_python=pathlib.Path("m.py"), old=False)
@@ -752,9 +750,7 @@ def test_flash_old_style_and_fallback_from_put_ioerror() -> None:
         patch("uflash.lib.resolve_microbit_path", return_value=p),
         patch("uflash.lib.get_board_info", return_value=(True, None, serial)),
         patch("uflash.lib.embed_and_save_micropython_hex") as em,
-        patch(
-            "uflash.lib.microfs.put", side_effect=lib.microfs.MicroBitIOError
-        ),
+        patch("uflash.lib.microfs.put", side_effect=microfs.MicroBitIOError),
         patch("uflash.lib.logger.warning"),
     ):
         lib.flash(path_to_python=p_py, old=False)

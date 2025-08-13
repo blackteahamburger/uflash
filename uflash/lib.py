@@ -33,9 +33,9 @@ FS_CHUNK_SIZE: Final = 128
 # 1st & last bytes are the prev/next chunk pointers
 FS_CHUNK_DATA_SIZE: Final = 126
 # Intel Hex record types
-IHEX_DATA_RECORD = 0x00
-IHEX_EXT_LINEAR_ADDR_RECORD = 0x04
-UHEX_V2_DATA_RECORD = 0x0D
+IHEX_DATA_RECORD: Final = 0x00
+IHEX_EXT_LINEAR_ADDR_RECORD: Final = 0x04
+UHEX_V2_DATA_RECORD: Final = 0x0D
 
 
 # The version number reported by the bundled MicroPython in os.uname().
