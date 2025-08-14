@@ -2,7 +2,9 @@
 #
 # See the LICENSE file for more information.
 
-# pyright: reportPrivateUsage=false
+# pyright: reportUnknownVariableType=false
+# pyright: reportUnknownMemberType=false
+# pyright: reportAttributeAccessIssue=false
 """Test module for uflash.uextract."""
 
 import argparse
@@ -17,7 +19,8 @@ from uflash import uextract
 
 def test_build_parser_and_run_command() -> None:
     """Test parser creation and _run_command invocation."""
-    parser = uextract._build_parser()
+    with mock.patch("importlib.metadata.version", return_value="1.0.0"):
+        parser = uextract._build_parser()
     args = parser.parse_args([
         "--source",
         "micropython.hex",

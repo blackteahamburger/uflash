@@ -165,6 +165,7 @@ In the new method, the MicroPython runtime hex is unmodified.
         help="Watch the source file for changes.",
     )
     other_group.add_argument(
+        "-v",
         "--version",
         action="version",
         version=f"uFlash version: {importlib.metadata.version('uflash3')}",

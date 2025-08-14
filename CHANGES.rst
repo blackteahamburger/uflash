@@ -1,6 +1,11 @@
 Release History
 ===============
 
+3.0.1
+-----
+
+* Add missing command-line options.
+
 3.0.0
 -----
 

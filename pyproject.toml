@@ -30,7 +30,7 @@
     name = "uflash3"
     readme = "README.rst"
     requires-python = ">=3.10"
-    version = "3.0.0"
+    version = "3.0.1"
 
     [project.optional-dependencies]
         dev = ["coverage", "pytest-cov", "pytest>=5", "ruff", "sphinx"]

@@ -4,6 +4,7 @@
 """Entry point for the command line tool 'uextract'."""
 
 import argparse
+import importlib.metadata
 import logging
 import pathlib
 import sys
@@ -52,6 +53,14 @@ extracts the embedded Python file, and saves it to a specified location.
         help="Output file or directory for the extracted Python script.\n"
         "If a directory is specified, the embedded filename is used.\n"
         "If omitted, the file is saved using the embedded filename.",
+    )
+
+    other_group = parser.add_argument_group("Other Options")
+    other_group.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=f"uFlash version: {importlib.metadata.version('uflash3')}",
     )
     return parser
 
