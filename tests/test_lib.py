@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import contextlib
+import os
 import pathlib
 import tempfile
 import types
@@ -102,18 +103,20 @@ def test_bytes_to_ihex_basic() -> None:
     assert out.startswith(":")
 
 
-def test_find_microbit_posix_and_nt_and_other() -> None:
-    """Test find_microbit for posix, nt, and other OS types."""
-    with (
-        patch("uflash.lib.os.name", "posix"),
-        patch(
-            "uflash.lib.check_output",
-            return_value=b"dev on /MICROBIT type xx\n",
-        ),
+@pytest.mark.skipif(os.name != "posix", reason="POSIX-only test")
+def test_find_microbit_posix() -> None:
+    """Test find_microbit on POSIX systems."""
+    with patch(
+        "uflash.lib.check_output", return_value=b"dev on /MICROBIT type xx\n"
     ):
         p = lib.find_microbit()
         assert isinstance(p, pathlib.Path)
         assert p.as_posix().endswith("MICROBIT")
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows-only test")
+def test_find_microbit_nt() -> None:
+    """Test find_microbit on Windows systems."""
 
     class FakeCTypes:
         class windll:
@@ -147,12 +150,15 @@ def test_find_microbit_posix_and_nt_and_other() -> None:
             return 1024
 
     with (
-        patch("uflash.lib.os.name", "nt"),
         patch("uflash.lib.ctypes", FakeCTypes),
         patch("pathlib.Path.exists", return_value=True),
     ):
         p = lib.find_microbit()
         assert isinstance(p, pathlib.Path)
+
+
+def test_find_microbit_other_os() -> None:
+    """Test find_microbit on other operating systems."""
     with (
         patch("uflash.lib.os.name", "weird"),
         pytest.raises(NotImplementedError),
@@ -399,6 +405,7 @@ def test_embed_fs_uhex_with_esa_record() -> None:
         assert ":FS" in res
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows-only test")
 def test_find_microbit_windows_direct_return() -> None:
     """Test find_microbit for Windows direct return case."""
 
@@ -434,7 +441,6 @@ def test_find_microbit_windows_direct_return() -> None:
             return 1024
 
     with (
-        patch("uflash.lib.os.name", "nt"),
         patch("uflash.lib.ctypes", DummyCtypes),
         patch("pathlib.Path.exists", return_value=True),
     ):
@@ -592,6 +598,7 @@ def test_bytes_to_ihex_appends_ela_on_page_boundary() -> None:
     assert len(lines) >= 3
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows-only test")
 def test_find_microbit_windows_no_devices_and_continue() -> None:
     """Test find_microbit Windows with no devices and continue."""
 
@@ -624,13 +631,13 @@ def test_find_microbit_windows_no_devices_and_continue() -> None:
             return 1024
 
     with (
-        patch("uflash.lib.os.name", "nt"),
         patch("uflash.lib.ctypes", Dummy),
         patch("pathlib.Path.exists", return_value=False),
     ):
         assert lib.find_microbit() is None
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX-only test")
 def test_find_microbit_posix_returns_none_when_no_microbit() -> None:
     """Test find_microbit posix returns None when no microbit found."""
     with (

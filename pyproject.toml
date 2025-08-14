@@ -13,7 +13,6 @@
         "Intended Audience :: Education",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: POSIX",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
@@ -29,7 +28,7 @@
     ]
     name = "uflash3"
     readme = "README.rst"
-    requires-python = ">=3.10"
+    requires-python = ">=3.11"
     version = "3.0.1"
 
     [project.optional-dependencies]
