@@ -10,9 +10,9 @@ It provides three services:
 
 1. A library of functions to programatically create a hex file and
    flash it onto a BBC micro:bit.
-2. A command line utility called `uflash` that will flash Python scripts
-   onto a BBC micro:bit.
-3. A command line utility called `uextract` that will extract
+2. A command line utility called ``uflash``/``py2hex`` that will flash
+   Python scripts onto a BBC micro:bit.
+3. A command line utility called ``uextract``/``hex2py`` that will extract
    Python scripts from a hex file created by uFlash.
 
 Several essential operations are implemented:
@@ -43,14 +43,3 @@ configured automounting to be off. If that's the case, we assume you
 have the technical knowledge to mount the device yourself or to install the
 required kernel modules if they're missing. Default installs of popular Linux
 distros "should just work" (tm) out of the box given a default install.
-
-Command Usage
--------------
-
-To read help simply type::
-
-    $ uflash --help
-
-or::
-
-    $ uextract --help

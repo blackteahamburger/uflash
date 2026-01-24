@@ -30,12 +30,14 @@
     name = "uflash3"
     readme = "README.rst"
     requires-python = ">=3.11"
-    version = "3.0.1"
+    version = "3.0.2"
 
     [project.urls]
         Homepage = "https://github.com/blackteahamburger/uflash"
 
     [project.scripts]
+        hex2py   = "uflash.uextract:uextract"
+        py2hex   = "uflash.main:main"
         uextract = "uflash.uextract:uextract"
         uflash   = "uflash.main:main"
 

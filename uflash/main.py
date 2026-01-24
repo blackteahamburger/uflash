@@ -129,7 +129,7 @@ micro:bit v2 through https://github.com/blackteahamburger/micropython-microbit-v
         "-o",
         "--old",
         action="store_true",
-        help="Use the legacy flashing method.\n"
+        help="Use the old flashing method.\n"
         "Recommended if serial connection is unavailable.\n"
         "Implies `--force`.",
     )

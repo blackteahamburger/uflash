@@ -1,6 +1,12 @@
 Release History
 ===============
 
+3.0.2
+-----
+
+* Documentation improvements.
+* `py2hex` and `hex2py` command-line entry points added.
+
 3.0.1
 -----
 
