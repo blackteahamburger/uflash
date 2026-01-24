@@ -52,22 +52,3 @@ To read help simply type::
 or::
 
     $ uextract --help
-
-Development
------------
-
-The source code is hosted in GitHub. Please feel free to fork the repository.
-Assuming you have Git installed you can download the code from the canonical
-repository with the following command::
-
-    $ git clone https://github.com/blackteahamburger/uflash.git
-
-To locally install your development version of the module into a virtualenv,
-run the following command::
-
-    $ pip install -e ".[dev]"
-
-This also ensures that you have the correct dependencies for development.
-
-There is a Makefile that helps with most of the common workflows
-associated with development.

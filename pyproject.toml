@@ -16,6 +16,7 @@
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Topic :: Education",
         "Topic :: Software Development :: Embedded Systems",
     ]
@@ -30,9 +31,6 @@
     readme = "README.rst"
     requires-python = ">=3.11"
     version = "3.0.1"
-
-    [project.optional-dependencies]
-        dev = ["coverage", "pytest-cov", "pytest>=5", "ruff", "sphinx"]
 
     [project.urls]
         Homepage = "https://github.com/blackteahamburger/uflash"

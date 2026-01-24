@@ -2,7 +2,7 @@ builtins       = ["_"]
 exclude        = ["docs/conf.py", "tests/__init__.py", "tests/example.py"]
 line-length    = 79
 preview        = true
-target-version = "py313"
+target-version = "py314"
 unsafe-fixes   = true
 
 [analyze]
