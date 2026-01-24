@@ -59,6 +59,9 @@ In the new method, the MicroPython runtime hex is unmodified.
 6. If using the new method and a Python script is provided, attempts to
    copy `main.py` to the device via serial.
    - If serial communication fails, falls back to the old method.
+
+You can generate or download fully optimized MicroPython runtime hex for
+micro:bit v2 through https://github.com/blackteahamburger/micropython-microbit-v2-builder.
     """
     parser = argparse.ArgumentParser(
         prog="uflash",

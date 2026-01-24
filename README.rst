@@ -24,6 +24,8 @@ Several essential operations are implemented:
 * Copy the resulting hex onto the micro:bit, thus flashing the device.
 * Specify the MicroPython runtime hex in which to embed your Python code.
 
+You can generate or download fully optimized MicroPython runtime hex for micro:bit v2 through `micropython-microbit-v2-builder <https://github.com/blackteahamburger/micropython-microbit-v2-builder>`_.
+
 Installation
 ------------
 
