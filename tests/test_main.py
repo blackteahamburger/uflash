@@ -105,6 +105,27 @@ def test_run_command_flash_and_watch() -> None:
     assert called["flash_kwargs"]["flash_filename"] is None  # pyright: ignore[reportIndexIssue]
 
 
+def test_run_command_watch_requires_source() -> None:
+    """Test _run_command rejects --watch without a source file."""
+    with mock.patch("importlib.metadata.version", return_value="1.0.0"):
+        parser = main._build_parser()
+    args = argparse.Namespace(
+        device=None,
+        keepname=False,
+        source=None,
+        watch=True,
+        target=None,
+        runtime=None,
+        flash_filename="micropython",
+        serial=None,
+        timeout=10,
+        force=False,
+        old=False,
+    )
+    with pytest.raises(SystemExit):
+        main._run_command(parser, args)
+
+
 def test_main_exceptions() -> None:
     """Test main() handling of all expected exceptions."""
     exceptions: list[BaseException] = [
