@@ -1,6 +1,11 @@
 Release History
 ===============
 
+3.0.3
+-----
+
+* Miscellaneous fixes and improvements.
+
 3.0.2
 -----
 
