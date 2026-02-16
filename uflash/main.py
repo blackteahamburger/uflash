@@ -64,9 +64,7 @@ You can generate or download fully optimized MicroPython runtime hex for
 micro:bit v2 through https://github.com/blackteahamburger/micropython-microbit-v2-builder.
     """
     parser = argparse.ArgumentParser(
-        prog=sys.argv[0],
-        description=help_text,
-        formatter_class=argparse.RawTextHelpFormatter,
+        description=help_text, formatter_class=argparse.RawTextHelpFormatter
     )
 
     src_group = parser.add_argument_group("Source and Target Options")

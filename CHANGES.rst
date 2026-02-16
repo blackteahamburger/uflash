@@ -1,6 +1,10 @@
 Release History
 ===============
 
+3.0.4
+-----
+* Remove prog argument from ArgumentParser.
+
 3.0.3
 -----
 
