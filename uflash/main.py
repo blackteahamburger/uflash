@@ -198,17 +198,18 @@ def _flash_kwargs(args: argparse.Namespace) -> dict[str, Any]:
 def _run_command(
     parser: argparse.ArgumentParser, args: argparse.Namespace
 ) -> None:
+    if args.watch and args.source is None:
+        parser.error("`--watch` requires a source file.")
+    if args.source is not None and args.source.suffix not in {".py", ".hex"}:
+        parser.error("Invalid file type. Please provide a .py or .hex file.")
     if args.device is not None:
         args.device = MicrobitID[args.device]
     if args.keepname:
         args.flash_filename = None
-    if args.source is None or args.source.suffix in {".py", ".hex"}:
-        if args.watch:
-            watch_file(args.source, flash, **_flash_kwargs(args))
-        else:
-            flash(**_flash_kwargs(args))
+    if args.watch:
+        watch_file(args.source, flash, **_flash_kwargs(args))
     else:
-        parser.error("Invalid file type. Please provide a .py or .hex file.")
+        flash(**_flash_kwargs(args))
 
 
 def main() -> None:
