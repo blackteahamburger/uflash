@@ -80,9 +80,7 @@ def test_embed_fs_uhex_and_embed_fs_hex() -> None:
         assert ":FSHEX" in res
     assert lib.embed_fs_uhex("abc", None) == "abc"
 
-    def pad_hex_identity_args(
-        x: object, *args: object, **kwargs: object
-    ) -> object:
+    def pad_hex_identity_args(x: object, *args: object, **kwargs: object) -> object:
         return x
 
     with (
@@ -106,9 +104,7 @@ def test_bytes_to_ihex_basic() -> None:
 @pytest.mark.skipif(os.name != "posix", reason="POSIX-only test")
 def test_find_microbit_posix() -> None:
     """Test find_microbit on POSIX systems."""
-    with patch(
-        "uflash.lib.check_output", return_value=b"dev on /MICROBIT type xx\n"
-    ):
+    with patch("uflash.lib.check_output", return_value=b"dev on /MICROBIT type xx\n"):
         p = lib.find_microbit()
         assert isinstance(p, pathlib.Path)
         assert p.as_posix().endswith("MICROBIT")
@@ -159,10 +155,7 @@ def test_find_microbit_nt() -> None:
 
 def test_find_microbit_other_os() -> None:
     """Test find_microbit on other operating systems."""
-    with (
-        patch("uflash.lib.os.name", "weird"),
-        pytest.raises(NotImplementedError),
-    ):
+    with patch("uflash.lib.os.name", "weird"), pytest.raises(NotImplementedError):
         lib.find_microbit()
 
 
@@ -174,9 +167,7 @@ def test_save_hex_and_resolve_microbit() -> None:
         p2 = pathlib.Path("name.x")
         lib.save_hex("hi", p2)
         assert wb.called
-    with patch(
-        "uflash.lib.find_microbit", return_value=pathlib.Path("/mnt/MB")
-    ):
+    with patch("uflash.lib.find_microbit", return_value=pathlib.Path("/mnt/MB")):
         assert lib.resolve_microbit_path(None) == pathlib.Path("/mnt/MB")
     with (
         patch("uflash.lib.find_microbit", return_value=None),
@@ -219,9 +210,7 @@ def test_flash_and_embed_and_save_helpers() -> None:
             return P()
 
     with (
-        patch(
-            "uflash.lib.importlib.resources.files", return_value=FakeFiles()
-        ),
+        patch("uflash.lib.importlib.resources.files", return_value=FakeFiles()),
         patch("uflash.lib.save_hex"),
         patch("uflash.lib.time.sleep"),
     ):
@@ -240,9 +229,7 @@ def testget_board_info_branches() -> None:
     fakemb.get_serial = MagicMock(return_value=serial)
     with (
         patch("uflash.lib.microfs.MicroBitSerial", fakemb),
-        patch(
-            "uflash.lib.microfs.micropython_version", return_value="unknown"
-        ),
+        patch("uflash.lib.microfs.micropython_version", return_value="unknown"),
     ):
         r = lib.get_board_info(None, None, "COM", 1, False)
         assert r[0] is True
@@ -255,15 +242,11 @@ def testget_board_info_branches() -> None:
 
     with (
         patch("uflash.lib.microfs.MicroBitSerial", fakemb),
-        patch(
-            "uflash.lib.microfs.MicroBitSerial.get_serial", return_value=serial
-        ),
+        patch("uflash.lib.microfs.MicroBitSerial.get_serial", return_value=serial),
         patch("uflash.lib.microfs.micropython_version", return_value="1.1.1"),
         patch(
             "uflash.lib.semver.Version.parse",
-            return_value=type(
-                "V", (), {"major": 1, "__lt__": v_lt, "__eq__": v_eq}
-            )(),
+            return_value=type("V", (), {"major": 1, "__lt__": v_lt, "__eq__": v_eq})(),
         ),
     ):
         r2 = lib.get_board_info(None, None, None, 1, False)
@@ -451,9 +434,7 @@ def test_find_microbit_windows_direct_return() -> None:
 def test_embed_and_save_runtime_filename_branches() -> None:
     """Test embed_and_save_micropython_hex filename branches."""
     with (
-        patch(
-            "uflash.lib.importlib.resources.files", return_value=pathlib.Path()
-        ),
+        patch("uflash.lib.importlib.resources.files", return_value=pathlib.Path()),
         patch("pathlib.Path.read_text", return_value="abc"),
         patch("uflash.lib.save_hex"),
         patch("uflash.lib.time.sleep"),
@@ -467,12 +448,7 @@ def test_embed_and_save_runtime_filename_branches() -> None:
         patch("uflash.lib.time.sleep"),
     ):
         lib.embed_and_save_micropython_hex(
-            pathlib.Path("x.hex"),
-            lib.MicrobitID.V1,
-            None,
-            pathlib.Path(),
-            None,
-            False,
+            pathlib.Path("x.hex"), lib.MicrobitID.V1, None, pathlib.Path(), None, False
         )
     with (
         patch("pathlib.Path.read_text", return_value="abc"),
@@ -480,12 +456,7 @@ def test_embed_and_save_runtime_filename_branches() -> None:
         patch("uflash.lib.time.sleep"),
     ):
         lib.embed_and_save_micropython_hex(
-            pathlib.Path("x.hex"),
-            lib.MicrobitID.V2,
-            None,
-            pathlib.Path(),
-            None,
-            False,
+            pathlib.Path("x.hex"), lib.MicrobitID.V2, None, pathlib.Path(), None, False
         )
 
 
@@ -504,24 +475,18 @@ def testget_board_info_equal_and_path_to_runtime_not_none() -> None:
         return True
 
     with (
-        patch(
-            "uflash.lib.microfs.MicroBitSerial.get_serial", return_value=serial
-        ),
+        patch("uflash.lib.microfs.MicroBitSerial.get_serial", return_value=serial),
         patch("uflash.lib.microfs.micropython_version", return_value="1.1.1"),
         patch(
             "uflash.lib.semver.Version.parse",
             return_value=type(
-                "V",
-                (),
-                {"major": 1, "__lt__": v_lt_named, "__eq__": v_eq_named},
+                "V", (), {"major": 1, "__lt__": v_lt_named, "__eq__": v_eq_named}
             )(),
         ),
     ):
         res = lib.get_board_info(None, None, None, 1, False)
         assert res[0] is False
-    with patch(
-        "uflash.lib.microfs.MicroBitSerial.get_serial", return_value=serial
-    ):
+    with patch("uflash.lib.microfs.MicroBitSerial.get_serial", return_value=serial):
         res2 = lib.get_board_info(pathlib.Path("r.hex"), None, None, 1, False)
         assert res2[0] is True
 
@@ -549,10 +514,7 @@ def test_script_to_fs_triggers_scratch_slice() -> None:
 
     with (
         patch("uflash.lib.nudatus.mangle", side_effect=fake_nudatus_mangle),
-        patch(
-            "uflash.lib.bytes_to_ihex",
-            side_effect=["A" * 16 + "X", "A" * 16 + "Y"],
-        ),
+        patch("uflash.lib.bytes_to_ihex", side_effect=["A" * 16 + "X", "A" * 16 + "Y"]),
     ):
         out = lib.script_to_fs(b"print(1)\n", lib.MicrobitID.V1, True)
         assert "X" in out
@@ -581,9 +543,7 @@ def test_embed_fs_uhex_handles_ela_and_esa_before_uicr() -> None:
 
     with (
         patch("uflash.lib.script_to_fs", return_value=":FS\n"),
-        patch(
-            "uflash.lib.pad_hex_string", side_effect=pad_hex_identity_ela_esa
-        ),
+        patch("uflash.lib.pad_hex_string", side_effect=pad_hex_identity_ela_esa),
     ):
         out = lib.embed_fs_uhex(uhex, b"code")
         assert ":FS" in out
@@ -666,9 +626,7 @@ def test_embed_and_save_runtime_filename_deviceid_v1_v2() -> None:
             return P()
 
     with (
-        patch(
-            "uflash.lib.importlib.resources.files", return_value=FakeFiles()
-        ),
+        patch("uflash.lib.importlib.resources.files", return_value=FakeFiles()),
         patch("uflash.lib.save_hex"),
         patch("uflash.lib.time.sleep"),
     ):
@@ -676,9 +634,7 @@ def test_embed_and_save_runtime_filename_deviceid_v1_v2() -> None:
             None, lib.MicrobitID.V1, None, pathlib.Path(), None, False
         )
     with (
-        patch(
-            "uflash.lib.importlib.resources.files", return_value=FakeFiles()
-        ),
+        patch("uflash.lib.importlib.resources.files", return_value=FakeFiles()),
         patch("uflash.lib.save_hex"),
         patch("uflash.lib.time.sleep"),
     ):
@@ -688,7 +644,7 @@ def test_embed_and_save_runtime_filename_deviceid_v1_v2() -> None:
 
 
 def test_embed_and_save_old_with_deviceid_none_uses_embed_fs_uhex() -> None:
-    """Test embed_and_save_micropython_hex uses embed_fs_uhex if deviceid None."""  # noqa: E501
+    """Test embed_and_save_micropython_hex uses embed_fs_uhex if deviceid None."""
     p_runtime = pathlib.Path("runtime.hex")
     p_py = pathlib.Path("main.py")
     with (
@@ -703,9 +659,7 @@ def test_embed_and_save_old_with_deviceid_none_uses_embed_fs_uhex() -> None:
         )
 
 
-def test_embed_and_save_runtime_filename_when_path_to_runtime_provided() -> (
-    None
-):
+def test_embed_and_save_runtime_filename_when_path_to_runtime_provided() -> None:
     """Test embed_and_save_micropython_hex when runtime path provided."""
     r = pathlib.Path("r.hex")
     with (
@@ -713,9 +667,7 @@ def test_embed_and_save_runtime_filename_when_path_to_runtime_provided() -> (
         patch("uflash.lib.save_hex"),
         patch("uflash.lib.time.sleep"),
     ):
-        lib.embed_and_save_micropython_hex(
-            r, None, None, pathlib.Path(), None, False
-        )
+        lib.embed_and_save_micropython_hex(r, None, None, pathlib.Path(), None, False)
 
 
 def testget_board_info_major_two_sets_v2_and_device() -> None:
@@ -731,15 +683,11 @@ def testget_board_info_major_two_sets_v2_and_device() -> None:
         return False
 
     with (
-        patch(
-            "uflash.lib.microfs.MicroBitSerial.get_serial", return_value=serial
-        ),
+        patch("uflash.lib.microfs.MicroBitSerial.get_serial", return_value=serial),
         patch("uflash.lib.microfs.micropython_version", return_value="2.0.0"),
         patch(
             "uflash.lib.semver.Version.parse",
-            return_value=type(
-                "V", (), {"major": 2, "__lt__": v_lt, "__eq__": v_eq}
-            )(),
+            return_value=type("V", (), {"major": 2, "__lt__": v_lt, "__eq__": v_eq})(),
         ),
     ):
         update, device, _ser = lib.get_board_info(None, None, None, 1, False)
@@ -789,21 +737,11 @@ def test_embed_fs_uhex_hits_ela_record_trim() -> None:
 def test_parse_intel_hex_basic() -> None:
     """Test parse_intel_hex parses data records and EOF."""
     hex_data = (
-        ":020000040000FA\n"
-        ":100000000102030405060708090A0B0C0D0E0F1068\n"
-        ":00000001FF"
+        ":020000040000FA\n:100000000102030405060708090A0B0C0D0E0F1068\n:00000001FF"
     )
     mem = lib.parse_intel_hex(hex_data)
     assert mem[0] == 0x01
     assert mem[15] == 0x10
-
-
-def test_extract_fs_bytes() -> None:
-    """Test extract_fs builds a byte span with 0xFF defaults."""
-    start = int(lib.FSStartAddr.V1)
-    mem: dict[int, int] = {start: 0x11, start + 1: 0x22}
-    out = lib.extract_fs(mem, start, start + 4)
-    assert out == bytes([0x11, 0x22, 0xFF, 0xFF])
 
 
 def test_decode_file_from_fs_empty_and_valid() -> None:
@@ -816,9 +754,7 @@ def test_decode_file_from_fs_empty_and_valid() -> None:
     first_data = lib.FS_CHUNK_SIZE - (3 + len(nm)) - 1
     content = b"print(7)"
     pad = b"\xff" * (first_data - len(content))
-    first_chunk = (
-        b"\xfe" + b"\x00" + bytes([len(nm)]) + nm + content + pad + b"\xff"
-    )
+    first_chunk = b"\xfe" + b"\x00" + bytes([len(nm)]) + nm + content + pad + b"\xff"
     name1, data1 = lib.decode_file_from_fs(first_chunk)
     assert name1 == "main.py"
     assert data1.startswith(b"print")
@@ -830,9 +766,7 @@ def test_extract_script_with_mem_mapping() -> None:
     first_data = lib.FS_CHUNK_SIZE - (3 + len(nm)) - 1
     content = b"print(1)"
     pad = b"\xff" * (first_data - len(content))
-    fs_bytes = (
-        b"\xfe" + b"\x00" + bytes([len(nm)]) + nm + content + pad + b"\xff"
-    )
+    fs_bytes = b"\xfe" + b"\x00" + bytes([len(nm)]) + nm + content + pad + b"\xff"
     start = int(lib.FSStartAddr.V1)
     mem: dict[int, int] = {start + i: b for i, b in enumerate(fs_bytes)}
     with patch("uflash.lib.parse_intel_hex", return_value=mem):
@@ -881,9 +815,7 @@ def test_extract_success_and_warning() -> None:
             patch("uflash.lib.resolve_microbit_path", fake_resolve2),
             patch("uflash.lib.extract_script", fake_extract_empty),
         ):
-            lib.extract(
-                "micropython.hex", path_to_microbit=base2, target=base2
-            )
+            lib.extract("micropython.hex", path_to_microbit=base2, target=base2)
             assert "w" in flagged
 
 
@@ -980,9 +912,7 @@ def test_decode_file_from_fs_follows_next_chunk() -> None:
         b"\xfe" + b"\x00" + bytes([len(name)]) + name + first_payload + b"\x02"
     )
     second_payload = b"B" * 5
-    second_chunk = (
-        b"\x01" + second_payload + (b"\xff" * (lib.FS_CHUNK_SIZE - 1 - 5))
-    )
+    second_chunk = b"\x01" + second_payload + (b"\xff" * (lib.FS_CHUNK_SIZE - 1 - 5))
     fs_bytes = first_chunk + second_chunk
     fname, content = lib.decode_file_from_fs(fs_bytes)
     assert fname == "m.py"

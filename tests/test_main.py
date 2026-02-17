@@ -24,13 +24,7 @@ def test_build_parser_and_flash_kwargs() -> None:
     """Test parser creation and _flash_kwargs path selection."""
     with mock.patch("importlib.metadata.version", return_value="1.0.0"):
         parser = main._build_parser()
-    args = parser.parse_args([
-        "script.py",
-        "--target",
-        "mubit",
-        "--serial",
-        "COM1",
-    ])
+    args = parser.parse_args(["script.py", "--target", "mubit", "--serial", "COM1"])
     kwargs = main._flash_kwargs(args)
     assert kwargs["path_to_python"] == pathlib.Path("script.py")
     args.source = pathlib.Path("file.hex")
@@ -145,9 +139,7 @@ def test_main_exceptions() -> None:
         return None
 
     def fake_get_logger(_name: str | None = None) -> object:
-        return types.SimpleNamespace(
-            error=fake_error, exception=fake_exception
-        )
+        return types.SimpleNamespace(error=fake_error, exception=fake_exception)
 
     def fake_build_parser() -> object:
         class DummyParser:

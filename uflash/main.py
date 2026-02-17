@@ -114,8 +114,7 @@ micro:bit v2 through https://github.com/blackteahamburger/micropython-microbit-v
         "-k",
         "--keepname",
         action="store_true",
-        help="Keep the original file name when flashing.\n"
-        "Used in the old method.",
+        help="Keep the original file name when flashing.\nUsed in the old method.",
     )
     runtime_group.add_argument(
         "-f",
@@ -160,10 +159,7 @@ micro:bit v2 through https://github.com/blackteahamburger/micropython-microbit-v
     )
     other_group = parser.add_argument_group("Other Options")
     other_group.add_argument(
-        "-w",
-        "--watch",
-        action="store_true",
-        help="Watch the source file for changes.",
+        "-w", "--watch", action="store_true", help="Watch the source file for changes."
     )
     other_group.add_argument(
         "-v",
@@ -174,8 +170,8 @@ micro:bit v2 through https://github.com/blackteahamburger/micropython-microbit-v
     return parser
 
 
-def _flash_kwargs(args: argparse.Namespace) -> dict[str, Any]:
-    return {
+def _run_command(args: argparse.Namespace) -> None:
+    flash_kwargs: dict[str, Any] = {
         "path_to_python": args.source
         if args.source and args.source.suffix == ".py"
         else None,
@@ -184,41 +180,31 @@ def _flash_kwargs(args: argparse.Namespace) -> dict[str, Any]:
         else None,
         "path_to_microbit": args.target,
         "path_to_runtime": args.runtime,
-        "flash_filename": args.flash_filename,
+        "flash_filename": None if args.keepname else args.flash_filename,
         "port": args.serial,
         "timeout": args.timeout,
         "force": args.force,
         "old": args.old,
-        "device_id": args.device,
+        "device_id": MicrobitID[args.device] if args.device else None,
     }
-
-
-def _run_command(
-    parser: argparse.ArgumentParser, args: argparse.Namespace
-) -> None:
-    if args.watch and args.source is None:
-        parser.error("`--watch` requires a source file.")
-    if args.source is not None and args.source.suffix not in {".py", ".hex"}:
-        parser.error("Invalid file type. Please provide a .py or .hex file.")
-    if args.device is not None:
-        args.device = MicrobitID[args.device]
-    if args.keepname:
-        args.flash_filename = None
     if args.watch:
-        watch_file(args.source, flash, **_flash_kwargs(args))
+        watch_file(args.source, flash, **flash_kwargs)
     else:
-        flash(**_flash_kwargs(args))
+        flash(**flash_kwargs)
 
 
 def main() -> None:
     """Entry point for the command line tool 'uflash'."""
-    argv = sys.argv[1:]
     logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
     logger = logging.getLogger(__name__)
     parser = _build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
+    if args.watch and args.source is None:
+        parser.error("`--watch` requires a source file.")
+    if args.source is not None and args.source.suffix not in {".py", ".hex"}:
+        parser.error("Invalid file type. Please provide a .py or .hex file.")
     try:
-        _run_command(parser, args)
+        _run_command(args)
     except MicroBitNotFoundError as e:
         logger.error("The BBC micro:bit device is not connected: %s", e)  # noqa: TRY400
         sys.exit(1)

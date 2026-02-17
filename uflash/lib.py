@@ -9,6 +9,7 @@ from __future__ import annotations
 import binascii
 import ctypes
 import importlib.resources
+import itertools
 import logging
 import os
 import pathlib
@@ -25,7 +26,7 @@ import nudatus  # pyright: ignore[reportMissingTypeStubs]
 import semver
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
 
 
 # Filesystem chunks configure in MP to 128
@@ -75,7 +76,7 @@ class ScriptTooLongError(ValueError):
     """Exception raised when the Python script is too long to fit in the fs."""
 
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
@@ -109,8 +110,7 @@ def script_to_fs(
     if not script:
         return ""
     # Convert line endings in case the file was created on Windows.
-    script = script.replace(b"\r\n", b"\n")
-    script = script.replace(b"\r", b"\n")
+    script = script.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
 
     # Find fs boundaries based on micro:bit version ID
     if microbit_version_id == MicrobitID.V1:
@@ -129,10 +129,11 @@ def script_to_fs(
         # raise TokenError uniformly to make exception handling easier
         raise TokenError(str(e)) from e
 
-    fs_size = fs_end_address - fs_start_address
     # Total file size depends on data and filename length, as uFlash only
     # supports a single file with a known name (main.py) we can calculate it
-    main_py_max_size = ((fs_size / FS_CHUNK_SIZE) * FS_CHUNK_DATA_SIZE) - 9
+    main_py_max_size = (
+        (fs_end_address - fs_start_address) // FS_CHUNK_SIZE * FS_CHUNK_DATA_SIZE
+    ) - 9
     if len(script) >= main_py_max_size:
         msg = (
             f"Python script must be less than {main_py_max_size} bytes, "
@@ -161,29 +162,20 @@ def script_to_fs(
         # This chunk head points to the previous
         chunk = struct.pack("B", chunk_index - 1) + script[:FS_CHUNK_DATA_SIZE]
         script = script[FS_CHUNK_DATA_SIZE:]
-        chunks.append(
-            bytearray(chunk + (b"\xff" * (FS_CHUNK_SIZE - len(chunk))))
-        )
+        chunks.append(bytearray(chunk + (b"\xff" * (FS_CHUNK_SIZE - len(chunk)))))
 
     # Calculate the end of file offset that goes into the header
-    last_chunk_offset = (len(chunk) - 1) % FS_CHUNK_DATA_SIZE
-    chunks[0][1] = last_chunk_offset
+    chunks[0][1] = (len(chunk) - 1) % FS_CHUNK_DATA_SIZE
     # Weird edge case: If we have a 0 offset we need a empty chunk at the end
-    if last_chunk_offset == 0:
+    if chunks[0][1] == 0:
         chunks[-1][-1] = len(chunks) + 1
         chunks.append(
-            bytearray(
-                struct.pack("B", len(chunks)) + (b"\xff" * (FS_CHUNK_SIZE - 1))
-            )
+            bytearray(struct.pack("B", len(chunks)) + (b"\xff" * (FS_CHUNK_SIZE - 1)))
         )
 
-    # Convert list of bytearrays to bytes
-    data = b"".join(chunks)
-    fs_ihex = bytes_to_ihex(fs_start_address, data, universal_data_record)
+    fs_ihex = bytes_to_ihex(fs_start_address, b"".join(chunks), universal_data_record)
     # Add this byte after the fs flash area to configure the scratch page there
-    scratch_ihex = bytes_to_ihex(
-        fs_end_address, b"\xfd", universal_data_record
-    )
+    scratch_ihex = bytes_to_ihex(fs_end_address, b"\xfd", universal_data_record)
     # Remove scratch Extended Linear Address record if we are in the same range
     ela_record_len = 16
     if fs_ihex[:ela_record_len] == scratch_ihex[:ela_record_len]:
@@ -217,8 +209,7 @@ def pad_hex_string(hex_records_str: str, alignment: int = 512) -> str:
     """
     if not hex_records_str:
         return ""
-    padding_needed = len(hex_records_str) % alignment
-    if padding_needed:
+    if len(hex_records_str) % alignment:
         # As the padding record data is all "0xFF", the checksum is always 0xF4
         max_data_chars = 32
         max_padding_record = ":{:02x}00000C{}F4\n".format(
@@ -248,9 +239,7 @@ def pad_hex_string(hex_records_str: str, alignment: int = 512) -> str:
     return hex_records_str
 
 
-def embed_fs_uhex(
-    universal_hex_str: str, python_code: bytes | None = None
-) -> str:
+def embed_fs_uhex(universal_hex_str: str, python_code: bytes | None = None) -> str:
     """
     Embed a Python script into each section of a MicroPython Universal Hex.
 
@@ -283,24 +272,18 @@ def embed_fs_uhex(
     second_section_i = universal_hex_str[len(section_start) :].find(
         section_start
     ) + len(section_start)
-    uhex_sections = [
-        universal_hex_str[:second_section_i],
-        universal_hex_str[second_section_i:],
-    ]
 
     # Now for each section we add the Python code to the filesystem
     full_uhex_with_fs = ""
-    for section in uhex_sections:
+    for section in (
+        universal_hex_str[:second_section_i],
+        universal_hex_str[second_section_i:],
+    ):
         # Block Start record starts like this, followed by device ID (4 chars)
         block_start_record_start = ":0400000A"
-        block_start_record_i = section.find(block_start_record_start)
-        device_id_i = block_start_record_i + len(block_start_record_start)
-        device_id = section[device_id_i : device_id_i + 4]
-        # With the device ID we can encode the fs into hex records to inject
-        fs_hex = script_to_fs(
-            python_code, MicrobitID(device_id), universal_data_record=True
+        device_id_i = section.find(block_start_record_start) + len(
+            block_start_record_start
         )
-        fs_hex = pad_hex_string(fs_hex)
         # In all Sections the fs will be placed at the end of the hex, right
         # before the UICR, this is for compatibility with all DAPLink versions.
         # V1 memory layout in sequential order: MicroPython + fs + UICR
@@ -320,8 +303,19 @@ def embed_fs_uhex(
         esa_record = ":020000020000FC\n"
         if section[:uicr_i].endswith(esa_record):
             uicr_i -= len(esa_record)
+        # With the device ID we can encode the fs into hex records to inject
         # Now we know where to inject the fs hex block
-        full_uhex_with_fs += section[:uicr_i] + fs_hex + section[uicr_i:]
+        full_uhex_with_fs += (
+            section[:uicr_i]
+            + pad_hex_string(
+                script_to_fs(
+                    python_code,
+                    MicrobitID(section[device_id_i : device_id_i + 4]),
+                    universal_data_record=True,
+                )
+            )
+            + section[uicr_i:]
+        )
     return full_uhex_with_fs
 
 
@@ -347,24 +341,27 @@ def embed_fs_hex(
     """
     if not python_code or not runtime_hex:
         return runtime_hex
-    fs_hex = script_to_fs(
-        python_code, MicrobitID(device_id), universal_data_record=False
-    )
-    fs_hex = pad_hex_string(fs_hex, 16)
-    py_list = fs_hex.split()
     runtime_list = runtime_hex.split()
-    embedded_list: list[str] = []
     # The embedded list should be the original runtime with the Python based
     # hex embedded two lines from the end.
-    embedded_list.extend(runtime_list[:-5])
-    embedded_list.extend(py_list)
-    embedded_list.extend(runtime_list[-5:])
-    return "\n".join(embedded_list) + "\n"
+    return (
+        "\n".join(
+            itertools.chain(
+                runtime_list[:-5],
+                pad_hex_string(
+                    script_to_fs(
+                        python_code, MicrobitID(device_id), universal_data_record=False
+                    ),
+                    16,
+                ).split(),
+                runtime_list[-5:],
+            )
+        )
+        + "\n"
+    )
 
 
-def bytes_to_ihex(
-    addr: int, data: bytes, universal_data_record: bool = True
-) -> str:
+def bytes_to_ihex(addr: int, data: bytes, universal_data_record: bool = True) -> str:
     """
     Convert bytes into Intel Hex records from a given address.
 
@@ -393,35 +390,38 @@ def bytes_to_ihex(
         return ""
 
     def make_record(data: bytes) -> str:
-        checksump = (-(sum(bytearray(data)))) & 0xFF
         return ":{}{:02X}".format(
-            str(binascii.hexlify(data), "utf-8").upper(), checksump
+            str(binascii.hexlify(data), "utf-8").upper(),
+            (-(sum(bytearray(data)))) & 0xFF,
         )
 
-    # First create an Extended Linear Address Intel Hex record
-    current_ela = (addr >> 16) & 0xFFFF
-    ela_chunk = struct.pack(
-        ">BHBH", 0x02, 0x0000, IHEX_EXT_LINEAR_ADDR_RECORD, current_ela
-    )
-    output = [make_record(ela_chunk)]
-    # If the data is meant to go into a Universal Hex V2 section, then the
-    # record type needs to be 0x0D instead of 0x00 (V1 section still uses 0x00)
-    r_type = UHEX_V2_DATA_RECORD if universal_data_record else IHEX_DATA_RECORD
-    # Now create the Intel Hex data records
-    for i in range(0, len(data), 16):
-        # If we've jumped to the next 0x10000 address we'll need an ELA record
-        if ((addr >> 16) & 0xFFFF) != current_ela:
-            current_ela = (addr >> 16) & 0xFFFF
-            ela_chunk = struct.pack(
-                ">BHBH", 0x02, 0x0000, IHEX_EXT_LINEAR_ADDR_RECORD, current_ela
+    def record_generator(addr: int) -> Generator[str]:
+        # First create an Extended Linear Address Intel Hex record
+        current_ela = (addr >> 16) & 0xFFFF
+        yield make_record(
+            struct.pack(">BHBH", 0x02, 0x0000, IHEX_EXT_LINEAR_ADDR_RECORD, current_ela)
+        )
+        # If the data is meant to go into a Universal Hex V2 section, then the
+        # record type needs to be 0x0D instead of 0x00 (V1 section still uses 0x00)
+        r_type = UHEX_V2_DATA_RECORD if universal_data_record else IHEX_DATA_RECORD
+        # Now create the Intel Hex data records
+        for i in range(0, len(data), 16):
+            # If we've jumped to the next 0x10000 address we'll need an ELA record
+            if ((addr >> 16) & 0xFFFF) != current_ela:
+                current_ela = (addr >> 16) & 0xFFFF
+                yield make_record(
+                    struct.pack(
+                        ">BHBH", 0x02, 0x0000, IHEX_EXT_LINEAR_ADDR_RECORD, current_ela
+                    )
+                )
+            # Now the data record
+            chunk = data[i : min(i + 16, len(data))]
+            yield make_record(
+                struct.pack(">BHB", len(chunk), addr & 0xFFFF, r_type) + chunk
             )
-            output.append(make_record(ela_chunk))
-        # Now the data record
-        chunk = data[i : min(i + 16, len(data))]
-        chunk = struct.pack(">BHB", len(chunk), addr & 0xFFFF, r_type) + chunk
-        output.append(make_record(chunk))
-        addr += 16
-    return "\n".join(output)
+            addr += 16
+
+    return "\n".join(record_generator(addr))
 
 
 def find_microbit() -> pathlib.Path | None:
@@ -441,9 +441,8 @@ def find_microbit() -> pathlib.Path | None:
     if os.name == "posix":
         # 'posix' means we're on Linux or OSX (Mac).
         # Call the unix "mount" command to list the mounted volumes.
-        mount_output = check_output(["/bin/mount"]).splitlines()
-        mounted_volumes = [x.split()[2] for x in mount_output]
-        for volume in mounted_volumes:
+        for volume_line in check_output(["/bin/mount"]).splitlines():
+            volume = volume_line.split()[2]
             if volume.endswith(b"MICROBIT"):
                 return pathlib.Path(volume.decode())
     elif os.name == "nt":
@@ -530,9 +529,7 @@ def save_hex(hex_content: str, path: pathlib.Path) -> None:
     path.write_bytes(hex_content.encode("ascii"))
 
 
-def resolve_microbit_path(
-    path_to_microbit: pathlib.Path | None,
-) -> pathlib.Path:
+def resolve_microbit_path(path_to_microbit: pathlib.Path | None) -> pathlib.Path:
     """
     Resolve the path to the micro:bit device.
 
@@ -546,13 +543,13 @@ def resolve_microbit_path(
         The resolved path to the micro:bit device.
 
     """
-    if path_to_microbit is None:
-        found_microbit = find_microbit()
-        if found_microbit:
-            return found_microbit
-        msg = "Unable to find micro:bit. Is it plugged in?"
-        raise MicroBitNotFoundError(msg)
-    return path_to_microbit
+    if path_to_microbit is not None:
+        return path_to_microbit
+    found_microbit = find_microbit()
+    if found_microbit:
+        return found_microbit
+    msg = "Unable to find micro:bit. Is it plugged in?"
+    raise MicroBitNotFoundError(msg)
 
 
 def flash_hex_file(
@@ -575,11 +572,9 @@ def flash_hex_file(
     if path_to_hex.suffix != ".hex":
         msg = 'Hex files must end in ".hex".'
         raise ValueError(msg)
-    hex_content = path_to_hex.read_text(encoding="utf-8")
-    hex_file_name = (flash_filename or path_to_hex.stem) + ".hex"
-    hex_path = path_to_microbit / hex_file_name
+    hex_path = path_to_microbit / ((flash_filename or path_to_hex.stem) + ".hex")
     logger.info("Flashing hex to: %s", hex_path)
-    save_hex(hex_content, hex_path)
+    save_hex(path_to_hex.read_text(encoding="utf-8"), hex_path)
     logger.info("Flashing successful.")
 
 
@@ -609,36 +604,29 @@ def embed_and_save_micropython_hex(
     else:
         if device_id is None:
             runtime_filename = (
-                f"universal-hex-v{MicropythonVersion.V1}"
-                f"-v{MicropythonVersion.V2}.hex"
+                f"universal-hex-v{MicropythonVersion.V1}-v{MicropythonVersion.V2}.hex"
             )
         elif device_id == MicrobitID.V1:
-            runtime_filename = (
-                f"micropython-microbit-v{MicropythonVersion.V1}.hex"
-            )
+            runtime_filename = f"micropython-microbit-v{MicropythonVersion.V1}.hex"
         else:
-            runtime_filename = (
-                f"micropython-microbit-v{MicropythonVersion.V2}.hex"
-            )
+            runtime_filename = f"micropython-microbit-v{MicropythonVersion.V2}.hex"
         runtime_path = importlib.resources.files("uflash") / runtime_filename
     runtime = runtime_path.read_text(encoding="utf-8")
     if old and path_to_python is not None:
         python_script = path_to_python.read_bytes()
-        if device_id is None:
-            micropython_hex = embed_fs_uhex(runtime, python_script)
-        else:
-            micropython_hex = embed_fs_hex(runtime, device_id, python_script)
-        hex_file_name = (flash_filename or path_to_python.stem) + ".hex"
-        hex_path = path_to_microbit / hex_file_name
+        micropython_hex = (
+            embed_fs_uhex(runtime, python_script)
+            if device_id is None
+            else embed_fs_hex(runtime, device_id, python_script)
+        )
+        hex_path = path_to_microbit / ((flash_filename or path_to_python.stem) + ".hex")
         logger.info("Flashing %s to: %s", path_to_python.name, hex_path)
         logger.info("With MicroPython runtime %s", runtime_filename)
     else:
         micropython_hex = runtime
         hex_path = path_to_microbit / "micropython.hex"
         logger.info(
-            "Flashing MicroPython runtime %s to: %s",
-            runtime_filename,
-            hex_path,
+            "Flashing MicroPython runtime %s to: %s", runtime_filename, hex_path
         )
     save_hex(micropython_hex, hex_path)
     logger.info("Flashing complete.")
@@ -675,10 +663,11 @@ def get_board_info(
     update_micropython = False
     serial = None
     try:
-        if port is not None:
-            serial = microfs.MicroBitSerial(port, timeout=timeout)
-        else:
-            serial = microfs.MicroBitSerial.get_serial(timeout)
+        serial = (
+            microfs.MicroBitSerial(port, timeout=timeout)
+            if port is not None
+            else microfs.MicroBitSerial.get_serial(timeout)
+        )
         with serial:
             if path_to_runtime is None:
                 board_version = microfs.micropython_version(serial)
@@ -700,8 +689,7 @@ def get_board_info(
                             "the bundled MicroPython's release version."
                         )
                         logger.warning(
-                            "This doesn't mean they are "
-                            "necessarily equally new."
+                            "This doesn't mean they are necessarily equally new."
                         )
                         logger.warning(
                             "Skipping anyway. Use `--force` to force flashing."
@@ -831,7 +819,6 @@ def flash(
             # Called when the thread used to copy main.py encounters a problem
             # and there was a problem with the serial communication with
             # the device, so revert to forced flash... "old style".
-            # THIS IS A HACK!
             embed_and_save_micropython_hex(
                 path_to_runtime,
                 device_id,
@@ -843,10 +830,7 @@ def flash(
 
 
 def watch_file(
-    path: pathlib.Path,
-    func: Callable[..., object],
-    *args: object,
-    **kwargs: object,
+    path: pathlib.Path, func: Callable[..., object], *args: object, **kwargs: object
 ) -> None:
     """
     Watch a file for changes and call the given function on modification.
@@ -888,34 +872,14 @@ def parse_intel_hex(hex_str: str) -> dict[int, int]:
     for line in hex_str.strip().splitlines():
         if not line.startswith(":"):
             continue
-        record_len = int(line[1:3], 16)
-        addr = int(line[3:7], 16)
         rec_type = int(line[7:9], 16)
-        data = bytes.fromhex(line[9 : 9 + record_len * 2])
-        extended_linear_address = IHEX_EXT_LINEAR_ADDR_RECORD
+        data = bytes.fromhex(line[9 : 9 + int(line[1:3], 16) * 2])
         if rec_type in {IHEX_DATA_RECORD, UHEX_V2_DATA_RECORD}:  # Data record
-            full_addr = (current_ela << 16) + addr
             for i, b in enumerate(data):
-                mem[full_addr + i] = b
-        elif rec_type == extended_linear_address:
+                mem[(current_ela << 16) + int(line[3:7], 16) + i] = b
+        elif rec_type == IHEX_EXT_LINEAR_ADDR_RECORD:
             current_ela = int.from_bytes(data, "big")
     return mem
-
-
-def extract_fs(mem: dict[int, int], fs_start: int, fs_end: int) -> bytes:
-    """
-    Extract the entire FS region from the memory mapping.
-
-    Args:
-        mem: The memory mapping to extract the FS region from.
-        fs_start: The start address of the FS region.
-        fs_end: The end address of the FS region.
-
-    Returns:
-        The bytes extracted from the FS region.
-
-    """
-    return bytes(mem.get(addr, 0xFF) for addr in range(fs_start, fs_end))
 
 
 def decode_file_from_fs(
@@ -940,23 +904,25 @@ def decode_file_from_fs(
         filename = first_chunk[3 : 3 + name_len].decode(errors="ignore")
     except UnicodeDecodeError:
         filename = ""
-    # Data of the first chunk
-    first_chunk_data_size = FS_CHUNK_SIZE - (3 + name_len) - 1
-    data = bytearray(
-        first_chunk[3 + name_len : 3 + name_len + first_chunk_data_size]
-    )
-    # Traverse the linked list for subsequent chunks
-    next_chunk = first_chunk
-    while True:
-        next_idx = next_chunk[-1]
-        if next_idx == fs_chunk_end:
-            break
-        chunk_index = next_idx - 1
-        next_chunk = fs_bytes[
-            chunk_index * FS_CHUNK_SIZE : (chunk_index + 1) * FS_CHUNK_SIZE
+
+    def _data_chunks() -> Generator[bytes]:
+        # Data of the first chunk
+        yield first_chunk[
+            3 + name_len : 3 + name_len + FS_CHUNK_SIZE - (3 + name_len) - 1
         ]
-        data.extend(next_chunk[1 : 1 + FS_CHUNK_DATA_SIZE])
-    return filename, bytes(data).rstrip(b"\xff")
+        # Traverse the linked list for subsequent chunks
+        next_chunk = first_chunk
+        while True:
+            next_idx = next_chunk[-1]
+            if next_idx == fs_chunk_end:
+                break
+            chunk_index = next_idx - 1
+            next_chunk = fs_bytes[
+                chunk_index * FS_CHUNK_SIZE : (chunk_index + 1) * FS_CHUNK_SIZE
+            ]
+            yield next_chunk[1 : 1 + FS_CHUNK_DATA_SIZE]
+
+    return filename, b"".join(_data_chunks()).rstrip(b"\xff")
 
 
 def extract_script(
@@ -974,12 +940,10 @@ def extract_script(
 
     """
     mem = parse_intel_hex(embedded_hex)
-    for start, end in [
-        (FSStartAddr.V1, FSEndAddr.V1),
-        (FSStartAddr.V2, FSEndAddr.V2),
-    ]:
-        fs_bytes = extract_fs(mem, start, end)
-        filename, file_data = decode_file_from_fs(fs_bytes)
+    for start, end in ((FSStartAddr.V1, FSEndAddr.V1), (FSStartAddr.V2, FSEndAddr.V2)):
+        filename, file_data = decode_file_from_fs(
+            bytes(mem.get(addr, 0xFF) for addr in range(start, end))
+        )
         if file_data:
             return filename, file_data.decode(errors="ignore")
     return None, ""
@@ -1016,10 +980,11 @@ def extract(
     if not hex_filename.endswith(".hex"):
         msg = "Hex filename must end with '.hex'."
         raise ValueError(msg)
-    base_path = resolve_microbit_path(path_to_microbit)
-    hex_path = base_path / hex_filename
-    hex_content = hex_path.read_text(encoding="utf-8")
-    filename, code = extract_script(hex_content)
+    filename, code = extract_script(
+        (resolve_microbit_path(path_to_microbit) / hex_filename).read_text(
+            encoding="utf-8"
+        )
+    )
     if not filename or not code:
         logger.warning("No embedded Python file found in hex.")
         return

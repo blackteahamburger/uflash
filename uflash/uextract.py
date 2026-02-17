@@ -31,8 +31,7 @@ extracts the embedded Python file, and saves it to a specified location.
         "--source",
         type=str,
         default="micropython.hex",
-        help="The hex filename to extract from.\n"
-        "Defaults to 'micropython.hex'.",
+        help="The hex filename to extract from.\nDefaults to 'micropython.hex'.",
     )
     src_group.add_argument(
         "-m",
@@ -67,9 +66,7 @@ extracts the embedded Python file, and saves it to a specified location.
 
 def _run_command(args: argparse.Namespace) -> None:
     extract(
-        hex_filename=args.source,
-        path_to_microbit=args.microbit,
-        target=args.target,
+        hex_filename=args.source, path_to_microbit=args.microbit, target=args.target
     )
 
 

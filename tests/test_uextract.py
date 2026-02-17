@@ -55,9 +55,7 @@ def test_uextract_exceptions() -> None:
         return None
 
     def fake_get_logger(_name: str | None = None) -> object:
-        return types.SimpleNamespace(
-            error=fake_error, exception=fake_exception
-        )
+        return types.SimpleNamespace(error=fake_error, exception=fake_exception)
 
     def fake_build_parser() -> object:
         class DummyParser:
@@ -72,9 +70,7 @@ def test_uextract_exceptions() -> None:
 
     for exc in exceptions:
 
-        def fake_run_command(
-            _a: argparse.Namespace, exc: BaseException = exc
-        ) -> None:
+        def fake_run_command(_a: argparse.Namespace, exc: BaseException = exc) -> None:
             raise exc
 
         with (
