@@ -39,26 +39,26 @@ Working Process:
    directly to the device and exits.
 3. Determines whether to use the old flashing method or the new flashing
 method (see below).
-   - If `--old` is set, always uses the old method and forces firmware
+    - If `--old` is set, always uses the old method and forces firmware
  update.
-   - Otherwise, attempts to detect the board version and serial connection.
- - If serial detection fails, falls back to the old method.
+    - Otherwise, attempts to detect the board version and serial connection.
+        - If serial detection fails, falls back to the old method.
 4. The function decides whether to update (flash) the MicroPython runtime
-   based on the following conditions:
-   - If the `--force` flag is set or a custom runtime file is specified,
+    based on the following conditions:
+    - If the `--force` flag is set or a custom runtime file is specified,
  always update the runtime.
-   - If using serial communication and the detected MicroPython version on
+    - If using serial communication and the detected MicroPython version on
  the device is older than the bundled version, update the runtime.
-   - If the detected MicroPython version is unknown or cannot be read,
+    - If the detected MicroPython version is unknown or cannot be read,
  update the runtime.
-   - If none of the above apply and the device's runtime version matches
+    - If none of the above apply and the device's runtime version matches
  the bundled version, skip flashing unless forced.
 5. In the old method, the Python script is
 embedded into the MicroPython runtime hex.
 In the new method, the MicroPython runtime hex is unmodified.
 6. If using the new method and a Python script is provided, attempts to
-   copy `main.py` to the device via serial.
-   - If serial communication fails, falls back to the old method.
+    copy `main.py` to the device via serial.
+    - If serial communication fails, falls back to the old method.
 
 You can generate or download fully optimized MicroPython runtime hex for
 micro:bit v2 through https://github.com/blackteahamburger/micropython-microbit-v2-builder.
@@ -127,7 +127,7 @@ micro:bit v2 through https://github.com/blackteahamburger/micropython-microbit-v
         "--old",
         action="store_true",
         help="Use the old flashing method.\n"
-        "Recommended if serial connection is unavailable.\n"
+        "Useful if serial connection is unavailable.\n"
         "Implies `--force`.",
     )
     dev_group = parser.add_argument_group("Device and Serial Options")

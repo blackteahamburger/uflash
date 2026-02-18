@@ -20,7 +20,12 @@
         "Topic :: Education",
         "Topic :: Software Development :: Embedded Systems",
     ]
-    dependencies = ["microfs2>=2.0.6", "nudatus>=0.0.2", "semver"]
+    dependencies = [
+        "intelhex>=2.3.0",
+        "microfs2>=2.0.6",
+        "nudatus>=0.0.2",
+        "semver",
+    ]
     description = "A module and utility to flash Python onto the BBC micro:bit."
     license = "MIT"
     license-files = ["AUTHORS", "LICENSE"]
