@@ -1,3 +1,5 @@
+I've discovered that all you really need to do is copy the hex file to micro:bit and then use `MicroFS <https://github.com/blackteahamburger/microfs>`_. to copy the file to micro:bit's file system. Bye, project!
+
 uFlash
 ======
 
